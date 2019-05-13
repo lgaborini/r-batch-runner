@@ -10,6 +10,8 @@
 
 rm(list = ls())
 
+library(here)
+
 # Path to batch-runner folder
 path_batch_folder <- here('.')
 
@@ -30,12 +32,12 @@ path_jobs <- file.path(path_batch_folder, batch_opts$paths$path_jobs)
 
 # Job output path: must exist!
 path_output <- file.path(path_batch_folder, batch_opts$paths$path_output)
+stopifnot(dir.exists(path_output))
 
 # Job loader and preloader path
 path_job_loader <- file.path(path_batch_folder, batch_opts$paths$path_job_loader)
 
 
-stopifnot(dir.exists(path_output))
 
 # Logfile configuration ---------------------------------------------------
 
@@ -215,9 +217,9 @@ IFTTT_notify(value1 = 'End batch.')
 write_log('---')
 
 write_log("Failed jobs:")
-write_log(paste('-', job_results$failed))
+write_log(paste('-', basename(job_results$failed)))
 write_log("Succeeded jobs:")
-write_log(paste('-', job_results$succeeded))
+write_log(paste('-', basename(job_results$succeeded)))
 
 
 
