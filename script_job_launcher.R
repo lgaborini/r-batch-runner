@@ -223,12 +223,19 @@ write_log("Batch finished.")
 IFTTT_notify(value1 = 'End batch.')
 write_log('---')
 
-write_log("Failed jobs:")
-write_log(paste('-', basename(job_results$failed)))
-write_log("Succeeded jobs:")
-write_log(paste('-', basename(job_results$succeeded)))
+write_log(sprintf("Failed jobs: %d/%d", sum(length(job_results$failed)), n_jobs))
+if (is.null(job_results$failed)){ 
+   write_log('  [none]')
+} else {
+   write_log(paste('-', basename(job_results$failed)))
+}
 
-
+write_log(sprintf("Succeeded jobs: %d/%d", sum(length(job_results$succeeded)), n_jobs))
+if (is.null(job_results$succeeded)) {
+   write_log('  [none]')
+} else {
+   write_log(paste('-', basename(job_results$succeeded)))
+}
 
 # Save logfile to batch_output
 invisible(file.copy(from = logfile, to = logfile_last, overwrite = TRUE, copy.date = TRUE))
@@ -237,5 +244,9 @@ invisible(file.copy(from = logfile, to = logfile_last, overwrite = TRUE, copy.da
 
 # Run the optional termination command
 if (exists('job_parameters') && !is.null(job_parameters$job$run.on.terminate)) {
+   write_log('Running termination commands...')
    system(job_parameters$job$run.on.terminate)   
 }
+
+write_log('---')
+write_log('Batch finished.')
