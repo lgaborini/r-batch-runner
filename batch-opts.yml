@@ -13,7 +13,7 @@ paths:
    # Path to folder which will containing output
    path_output: 'batch-out'
    
-   # Path to the job loader
+   # Path to the job loader and preloader
    path_job_loader: 'job-scripts/job_loader.R'
 
 logging:

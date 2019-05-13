@@ -80,6 +80,13 @@ job_results <- list(failed = NULL, succeeded = NULL)
 # This is run using local paths!
 source(path_job_loader, chdir = TRUE)
 
+if (!exists('job_preloader') || !is.function(job_preloader)) {
+   stop('Job preloader not defined.')
+}
+
+if (!exists('job_loader') || !is.function(job_loader)) {
+   stop('Job loader not defined.')
+}
 
 # Batch job definition -------------------------------------------------------------------
 
@@ -148,7 +155,7 @@ while (length(jobs_in_queue) > 0) {
    
    # Call the job loader
    
-   job_output <- tryCatch(
+   job_output <- withCallingHandlers(
       
       job_loader(
          job_parameters = job_parameters, 
