@@ -69,7 +69,7 @@ job_results <- list(failed = NULL, succeeded = NULL)
 
 # Job definition
 # This is run using local paths!
-source(file.path('job-scripts/job_loader.R'), chdir = TRUE)
+source(file.path(batch_opts$paths$path_job_loader), chdir = TRUE)
 
 
 # Batch job definition -------------------------------------------------------------------

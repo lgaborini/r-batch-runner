@@ -6,8 +6,12 @@ paths:
    
    # Path to folder containing '.yml' jobs
    path_jobs: 'jobs'
+
    # Path to folder which will containing output
    path_output: 'batch-out'
+   
+   # Path to the job loader
+   path_job_loader: 'job-scripts/job_loader.R'
 
 logging:
    filename: 'workers.log'
