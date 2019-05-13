@@ -1,0 +1,11 @@
+# Job definition file
+#
+# YAML syntax:
+# - empty fields are null, or ~
+
+
+job:
+    job_name: ''
+params:
+    a: 0
+    b: 0

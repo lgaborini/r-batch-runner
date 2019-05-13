@@ -1,0 +1,23 @@
+# Batch-runner configuration file
+#
+
+paths:
+   # Path to data 
+   path_data: 'data/'
+   # Path to folder containing '.yml' jobs
+   path_jobs: 'jobs/'
+   # Path to folder which will containing output
+   path_output: 'path_output/'
+
+logging:
+   filename: 'workers.log'
+   filename_last: 'workers_last.log'
+   filename_fail: 'jobs_failed.log'
+   filename_succeed: 'jobs_succeeded.log'
+   
+notify:
+   use: no
+
+job_creation:
+   clear_old_jobs: true
+
