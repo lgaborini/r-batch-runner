@@ -6,7 +6,11 @@
 # Each job file is named "jobs/{basename}_{parameters}_{uuid}.yaml"
 # Each UUID is truncated to 12 digits.
 
-source('batch-utilities/utilities_batch.R')
+library(here)
+
+path_batch_folder <- here('.')
+
+source(file.path(path_batch_folder, 'batch-utilities', 'utilities_batch.R'))
 
 library(yaml)
 library(uuid)
@@ -16,9 +20,7 @@ library(dplyr)
 
 # Launcher configuration --------------------------------------------------
 
-library(yaml)
-
-batch_opts <- yaml::read_yaml('batch-opts.yml')
+batch_opts <- yaml::read_yaml(file.path(path_batch_folder, 'batch-opts.yml'))
 
 
 
@@ -26,11 +28,11 @@ batch_opts <- yaml::read_yaml('batch-opts.yml')
 
 # Setup output directory for yaml files
 # Create if empty
-path_jobs <- batch_opts$paths$path_jobs
+path_jobs <- file.path(path_batch_folder, batch_opts$paths$path_jobs)
 
 # Clear old jobs
 if (batch_opts$job_creation$clear_old_jobs) {
-   unlink(path_jobs)
+   unlink(path_jobs, recursive = TRUE)
 }
    
 dir.create(path_jobs, showWarnings = FALSE)
@@ -54,6 +56,12 @@ df_combinations <- purrr::cross_df(list(
       param_fix = list_param_fix
    ))
 
+cat('Generated configurations:\n')
+print(df_combinations)
+
+
+# Generate job names ------------------------------------------------------
+
 # Define job name pattern
 #
 # - `basename` will be substituted by a fixed string 
@@ -62,17 +70,32 @@ df_combinations <- purrr::cross_df(list(
 #
 str_filename_pattern <- '{basename}_param1={param_1}_param2={param_2}_{uuid}'
 
-print('Generated configurations:')
-df_combinations
+# Function which generates a file name from parameter combinations
+#
+# Also adds further fields, as required by the format string
+make_file_name <- function(df_combinations) {
+   
+   df_combinations_extended <- df_combinations %>% 
+      mutate(
+         basename = jobfile_basename_default,
+         uuid = make_uuid(12)
+      )
+   
+   # Collapse lists in filenames
+   df_combinations_friendly <- df_combinations_extended %>% 
+      mutate_if(is.list, ~ purrr::map_chr(.x, paste, collapse = ','))
+   
+   
+   filenames <- glue_data(df_combinations_friendly, str_filename_pattern)
+   filenames
+}
 
-print('Expected file names:')
+cat('Expected file names:\n')
+
 df_combinations %>% 
-   mutate(
-      basename = jobfile_basename_default,
-      uuid = '0000'
-   ) %>% 
-   glue_data(str_filename_pattern) %>% 
+   make_file_name() %>% 
    print
+
 
 # Generate job files ------------------------------------------------------
 
@@ -83,7 +106,7 @@ for (r in seq(n.combinations)) {
    cat(sprintf('Making jobfile %d of %d.\n', r, n.combinations))
    
    # Load the template, then overwrite it
-   yaml_template <- yaml::yaml.load_file('job_template.yaml')
+   yaml_template <- yaml::yaml.load_file(file.path(path_batch_folder, 'job_template.yaml'))
    yaml_params <- yaml_template
    
    # Modify parameters
@@ -96,13 +119,7 @@ for (r in seq(n.combinations)) {
    
    # Generate a job filename description using UUID (without "-")
    # Create the output filename from parameters and the string template
-
-   list_data <- c(list(
-         basename = jobfile_basename_default,
-         uuid = make_uuid(12)
-      ), yaml_params$params)
-   
-   jobfile_name <- glue_data(list_data, str_filename_pattern)
+   jobfile_name <- make_file_name(df_combinations[r, ])
    
    # Set the name in YAML job file
    yaml_params$job$job_name <- jobfile_name

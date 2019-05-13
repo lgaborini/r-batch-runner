@@ -3,6 +3,9 @@
 
 paths:
    # Trailing slashes are allowed but not tested for.
+   #
+   # All paths are relative to the current file.
+   #
    
    # Path to folder containing '.yml' jobs
    path_jobs: 'jobs'

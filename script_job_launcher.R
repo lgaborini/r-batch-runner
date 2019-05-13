@@ -10,6 +10,8 @@
 
 rm(list = ls())
 
+# Path to batch-runner folder
+path_batch_folder <- here('.')
 
 # Launcher configuration --------------------------------------------------
 #
@@ -18,16 +20,21 @@ rm(list = ls())
 
 library(yaml)
 
-batch_opts <- yaml::read_yaml('batch-opts.yml')
+batch_opts <- yaml::read_yaml(file.path(path_batch_folder, 'batch-opts.yml'))
 
 
 # Path configuration ------------------------------------------------------
 
 # Job input path
-path_jobs <- batch_opts$paths$path_jobs
+path_jobs <- file.path(path_batch_folder, batch_opts$paths$path_jobs)
 
 # Job output path: must exist!
-path_output <- batch_opts$paths$path_output
+path_output <- file.path(path_batch_folder, batch_opts$paths$path_output)
+
+# Job loader and preloader path
+path_job_loader <- file.path(path_batch_folder, batch_opts$paths$path_job_loader)
+
+
 stopifnot(dir.exists(path_output))
 
 # Logfile configuration ---------------------------------------------------
@@ -59,8 +66,8 @@ unlink(logfile_jobs_fail)
 
 # Batch job configuration -------------------------------------------------
 
-source('batch-utilities/utilities_batch.R')
-source('batch-utilities/IFTTT.R')
+source(file.path(path_batch_folder, 'batch-utilities/utilities_batch.R'))
+source(file.path(path_batch_folder, 'batch-utilities/IFTTT.R'))
 
 # dir.create(path_output, showWarnings = TRUE)
 
@@ -69,7 +76,7 @@ job_results <- list(failed = NULL, succeeded = NULL)
 
 # Job definition
 # This is run using local paths!
-source(file.path(batch_opts$paths$path_job_loader), chdir = TRUE)
+source(path_job_loader, chdir = TRUE)
 
 
 # Batch job definition -------------------------------------------------------------------
@@ -78,7 +85,7 @@ source(file.path(batch_opts$paths$path_job_loader), chdir = TRUE)
 
 # Template job file
 # It is well-formatted YAML, contains a very fast test case, easy to check.
-job_file_start <- 'job_template.yaml'
+job_file_start <- file.path(path_batch_folder, 'job_template.yaml')
 # job_parameters <- yaml.load_file(job_file_start)
 
 # Load job chain: default, the template
