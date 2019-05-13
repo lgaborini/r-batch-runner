@@ -2,12 +2,10 @@
 #
 
 paths:
-   # Path to data 
-   path_data: 'data/'
    # Path to folder containing '.yml' jobs
    path_jobs: 'jobs/'
    # Path to folder which will containing output
-   path_output: 'path_output/'
+   path_output: 'batch-out/'
 
 logging:
    filename: 'workers.log'
@@ -16,7 +14,10 @@ logging:
    filename_succeed: 'jobs_succeeded.log'
    
 notify:
+   # Activate IFTTT service
    use: no
+   # Minimum running time [seconds] to create a notification
+   min_time: 600          
 
 job_creation:
    clear_old_jobs: true

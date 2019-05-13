@@ -40,6 +40,8 @@ logfile <- file.path(path_output, batch_opts$logging$filename)
 flog.appender(appender.tee(logfile), name = 'ROOT')
 # flog.appender(appender.console(), name = 'ROOT')
 
+# flog.threshold(DEBUG, name = 'ROOT')
+
 
 # A function which writes to log
 write_log <- flog.info
@@ -162,7 +164,7 @@ while (length(jobs_in_queue) > 0) {
          write_log(sprintf("Job file '%s' finished. Total time: %.2f seconds.", job_file, time_total_sec))
          
          # Notify IFTTT for longer jobs
-         if (time_total_sec > 60*10) {
+         if (time_total_sec >= batch_opts$notify$min_time) {
             IFTTT_notify(value1 = sprintf('End job "%s".', job_name), value2 = job_file)
          }
          write_log('---')
@@ -179,6 +181,7 @@ while (length(jobs_in_queue) > 0) {
       # Do something with job_output
       if (!is.null(job_output)) {
          flog.debug('Have job output!')
+         flog.debug(str(job_output))
          
          job_file_basename <- tools::file_path_sans_ext(basename(job_file))
          file_output <- file.path(path_output, paste0(job_file_basename, '.RData'))

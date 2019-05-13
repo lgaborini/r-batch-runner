@@ -19,7 +19,7 @@ run_case <- function (job_parameters = NULL, log_writer = print, path_output) {
    
    log_writer('Job finished!')
    
-   invisible(NULL)
+   return(job_parameters$params)
 }
 
 # This reads some data

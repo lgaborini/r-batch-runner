@@ -3,6 +3,7 @@
 # All paths are relative to the loader!
 #
 
+# Defifne a sample job which writes the parameters, sometimes fails.
 source('sample_job.R')
 
 #' The job loader
