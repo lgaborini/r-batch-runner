@@ -11,7 +11,7 @@ source('batch-utilities/utilities_batch.R')
 library(yaml)
 library(uuid)
 library(glue)
-
+library(dplyr)
 
 
 # Launcher configuration --------------------------------------------------
@@ -23,8 +23,6 @@ batch_opts <- yaml::read_yaml('batch-opts.yml')
 
 
 # Launcher options --------------------------------------------------------
-
-
 
 # Setup output directory for yaml files
 # Create if empty
@@ -38,27 +36,29 @@ if (batch_opts$job_creation$clear_old_jobs) {
 dir.create(path_jobs, showWarnings = FALSE)
 
 
-
-
 # Parameter sweep ---------------------------------------------------------
 
 # Define jobfile basename
 jobfile_basename_default <- 'jobname'
 
 # Define parameter sweeps
+# some parameters can be fixed
 list_param_1 <- c('a', 'b')
 list_param_2 <- c(0, 1, 2)
+list_param_fix <- 1000
 
 # Generate parameter sweep
 df_combinations <- purrr::cross_df(list(
-   param_1 = list_param_1, 
-   param_2 = list_param_2)
-)
+      param_1 = list_param_1, 
+      param_2 = list_param_2,
+      param_fix = list_param_fix
+   ))
 
 # Define job name pattern
-#    basename will be substituted by a fixed string 
-#    uuid will be randomly generated
-#    column names from df_combinations can be used
+#
+# - `basename` will be substituted by a fixed string 
+# - `uuid` will be randomly generated
+# - column names from df_combinations can be used
 #
 str_filename_pattern <- '{basename}_param1={param_1}_param2={param_2}_{uuid}'
 
@@ -95,14 +95,14 @@ for (r in seq(n.combinations)) {
    # Generate job filename ---------------------------------------------------
    
    # Generate a job filename description using UUID (without "-")
-   # Create the output filename from parameters
+   # Create the output filename from parameters and the string template
 
-   jobfile_name <- glue_data(c(
-         list(
-            basename = jobfile_basename_default,
-            uuid = make_uuid(12)
-         ), yaml_params$params), 
-      str_filename_pattern)
+   list_data <- c(list(
+         basename = jobfile_basename_default,
+         uuid = make_uuid(12)
+      ), yaml_params$params)
+   
+   jobfile_name <- glue_data(list_data, str_filename_pattern)
    
    # Set the name in YAML job file
    yaml_params$job$job_name <- jobfile_name

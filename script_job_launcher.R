@@ -41,6 +41,7 @@ flog.appender(appender.tee(logfile), name = 'ROOT')
 # flog.appender(appender.console(), name = 'ROOT')
 
 # flog.threshold(DEBUG, name = 'ROOT')
+flog.threshold(INFO, name = 'ROOT')
 
 
 # A function which writes to log
@@ -126,7 +127,7 @@ while (length(jobs_in_queue) > 0) {
       jobs_in_queue <- c(jobs_in_queue, job_parameters$job$next.job)
    }
    
-   write_log(sprintf("Running job file '%s' [%d of %d].", job_file, i_job, n_jobs))
+   flog.info("Running job file '%s' [%d of %d].", job_file, i_job, n_jobs)
    
    # Job run -------------------------------------------------------------------
 
@@ -161,18 +162,18 @@ while (length(jobs_in_queue) > 0) {
          # Job timing 
          time_end_global <- Sys.time()
          time_total_sec <- as.numeric(difftime(time_end_global, time_start_global, units = 'secs'))
-         write_log(sprintf("Job file '%s' finished. Total time: %.2f seconds.", job_file, time_total_sec))
+         flog.info(sprintf("Job file '%s' finished. Total time: %.2f seconds.", job_file, time_total_sec))
          
          # Notify IFTTT for longer jobs
          if (time_total_sec >= batch_opts$notify$min_time) {
             IFTTT_notify(value1 = sprintf('End job "%s".', job_name), value2 = job_file)
          }
-         write_log('---')
+         flog.info('---')
       }
    )
    
    if (job_success == TRUE) {
-      write_log('Job "%s" succeeded.', job_file)
+      flog.debug('Job "%s" succeeded.', job_file)
       
       # Append to succeeded jobs
       job_results$succeeded <- c(job_results$succeeded, job_file)
@@ -186,9 +187,9 @@ while (length(jobs_in_queue) > 0) {
          job_file_basename <- tools::file_path_sans_ext(basename(job_file))
          file_output <- file.path(path_output, paste0(job_file_basename, '.RData'))
          
-         write_log('Saving output in file "%s', file_output)
+         flog.info('Saving output in file "%s', file_output)
          save(job_output, file = file_output)
-         write_log('Saved!')
+         flog.debug('Saved!')
       }
 
    } else {

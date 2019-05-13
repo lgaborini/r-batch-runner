@@ -2,10 +2,12 @@
 #
 
 paths:
+   # Trailing slashes are allowed but not tested for.
+   
    # Path to folder containing '.yml' jobs
-   path_jobs: 'jobs/'
+   path_jobs: 'jobs'
    # Path to folder which will containing output
-   path_output: 'batch-out/'
+   path_output: 'batch-out'
 
 logging:
    filename: 'workers.log'
