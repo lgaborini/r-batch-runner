@@ -1,4 +1,4 @@
-# batch-runner
+# R-batch-runner
 
 <!-- badges: start -->
 <!-- badges: end -->
@@ -45,12 +45,12 @@ If the return value is not `NULL`, results are saved to disk in the output folde
 
 ### Logging
 
-Logging is provided by package `futile.logger`.
+Logging is provided by package `futile.logger`.   
 The default logger is passed to the job loader, which is itself responsible of logging job output.
 
 ### Notifications
 
-The framework supports notifciations through IFTTT.    
+The framework supports notifications through IFTTT.    
 The IFTTT key is needed: it is supposed to be stored in the environment variable `IFTTT_key`.
 
 If this variable is empty, no notifications are performed.
