@@ -8,7 +8,7 @@
 
 library(here)
 
-path_batch_folder <- here('.')
+path_batch_folder <- here('batch', 'r-batch-runner')
 
 source(file.path(path_batch_folder, 'batch-utilities', 'utilities_batch.R'))
 
@@ -41,20 +41,34 @@ dir.create(path_jobs, showWarnings = FALSE)
 # Parameter sweep ---------------------------------------------------------
 
 # Define jobfile basename
-jobfile_basename_default <- 'jobname'
+jobfile_basename_default <- 'FourierLR'
 
 # Define parameter sweeps
 # some parameters can be fixed
-list_param_1 <- c('a', 'b')
-list_param_2 <- c(0, 1, 2)
-list_param_fix <- 1000
 
 # Generate parameter sweep
 df_combinations <- purrr::cross_df(list(
-      param_1 = list_param_1, 
-      param_2 = list_param_2,
-      param_fix = list_param_fix
+      which_harmonics = list(
+         # list('1'),    # only one variable! 
+         list('1', '2', '3'), 
+         list('2'),
+         list('3'), 
+         list('4')
+      ),
+      which_character = c('all'),
+      which_region = c('all'),
+      k_ref = as.integer(c(10, 20, 30)),
+      k_quest = as.integer(c(10, 20, 30)),
+      Hd_source = list('same', 'unrelated', 'twin'),
+      n_iter = as.integer(1000),
+      burn_in = as.integer(100),
+      use_priors = 'ML',
+      use_init = 'random',
+      split_background = 'outside'
    ))
+
+df_combinations <- df_combinations %>% 
+   filter(k_ref == k_quest)
 
 cat('Generated configurations:\n')
 print(df_combinations)
@@ -68,7 +82,7 @@ print(df_combinations)
 # - `uuid` will be randomly generated
 # - column names from df_combinations can be used
 #
-str_filename_pattern <- '{basename}_param1={param_1}_param2={param_2}_{uuid}'
+str_filename_pattern <- '{basename}_h={which_harmonics}_char={which_character}_Hd={Hd_source}_{uuid}'
 
 # Function which generates a file name from parameter combinations
 #

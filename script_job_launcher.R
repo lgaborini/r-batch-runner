@@ -13,7 +13,7 @@ rm(list = ls())
 library(here)
 
 # Path to batch-runner folder
-path_batch_folder <- here('.')
+path_batch_folder <- here('batch', 'r-batch-runner')
 
 # Launcher configuration --------------------------------------------------
 #
