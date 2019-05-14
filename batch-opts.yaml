@@ -7,10 +7,10 @@ paths:
    # All paths are relative to the current file.
    #
    
-   # Path to folder containing '.yml' jobs
+   # Path to folder containing '.yaml' jobs
    path_jobs: 'jobs'
 
-   # Path to folder which will containing output
+   # Path to folder which will contain output
    path_output: 'batch-out'
    
    # Path to the job loader and preloader
