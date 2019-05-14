@@ -20,7 +20,7 @@ library(dplyr)
 
 # Launcher configuration --------------------------------------------------
 
-batch_opts <- yaml::read_yaml(file.path(path_batch_folder, 'batch-opts.yml'))
+batch_opts <- yaml::read_yaml(file.path(path_batch_folder, 'batch-opts.yaml'))
 
 
 

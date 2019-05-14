@@ -22,7 +22,7 @@ path_batch_folder <- here('.')
 
 library(yaml)
 
-batch_opts <- yaml::read_yaml(file.path(path_batch_folder, 'batch-opts.yml'))
+batch_opts <- yaml::read_yaml(file.path(path_batch_folder, 'batch-opts.yaml'))
 
 
 # Path configuration ------------------------------------------------------
