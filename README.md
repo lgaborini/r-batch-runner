@@ -66,6 +66,7 @@ If this variable is empty, no notifications are performed.
 
 Logging can be disabled in the `batch-opts.yaml` file.
 
-## Wishlist
+## TODO
 
-- [ ] Separate YAML configuration from manual editing
+- [ ] Separate YAML configuration from manual script editing
+- [ ] Define job sweep in YAML file
