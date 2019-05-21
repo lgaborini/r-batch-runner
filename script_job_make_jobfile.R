@@ -50,15 +50,24 @@ jobfile_basename_default <- 'FourierLR'
 df_combinations <- purrr::cross_df(list(
       which_harmonics = list(
          # list('1'),    # only one variable! 
-         list('1', '2', '3'), 
-         list('2'),
-         list('3'), 
-         list('4')
+         list('1', '2', '3')
+         # list('2'),
+         # list('3'), 
+         # list('4')
       ),
+      # random: randomly choose ref/quest, paired: try all combinations
+      writer_comparison = c('random', 'paired'),
+      # writer_comparison = 'paired',
+      # writer_comparison = 'random',
+      # which character to consider for ref/quest/background
       which_character = c('all'),
+      # words, letters or everything
       which_region = c('all'),
-      k_ref = as.integer(c(10, 20, 30)),
-      k_quest = as.integer(c(10, 20, 30)),
+      # k_ref = as.integer(c(10, 20, 30)),
+      # k_quest = as.integer(c(10, 20, 30)),
+      k_ref = as.integer(10),
+      k_quest = as.integer(10),
+      # for writer_comparison = 'random'
       Hd_source = list('same', 'unrelated', 'twin'),
       n_iter = as.integer(1000),
       burn_in = as.integer(100),
@@ -82,7 +91,7 @@ print(df_combinations)
 # - `uuid` will be randomly generated
 # - column names from df_combinations can be used
 #
-str_filename_pattern <- '{basename}_h={which_harmonics}_char={which_character}_Hd={Hd_source}_{uuid}'
+str_filename_pattern <- '{basename}_h={which_harmonics}_char={which_character}_comp={writer_comparison}_Hd={Hd_source}_{uuid}'
 
 # Function which generates a file name from parameter combinations
 #
@@ -97,7 +106,7 @@ make_file_name <- function(df_combinations) {
    
    # Collapse lists in filenames
    df_combinations_friendly <- df_combinations_extended %>% 
-      mutate_if(is.list, ~ purrr::map_chr(.x, paste, collapse = ','))
+      mutate_if(is.list, ~ purrr::map_chr(.x, paste, collapse = ''))
    
    
    filenames <- glue_data(df_combinations_friendly, str_filename_pattern)
