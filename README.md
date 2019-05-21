@@ -3,13 +3,13 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
-This folder a framework to run parametrized scripts in batch mode.
+This directory contains a framework to run parametrized scripts in batch mode.
 
-- parameters for each job are read from `.yaml` files in folder `jobs/` (**job files**)
+- parameters for each job are read from `.yaml` files in directory `jobs/` 
 - job files are generated using the script `script_job_make_jobfile.R`.    
   The included script creates job files by sweeping parameters.
-- sample job scripts are specified in folder `job-scripts/`.
-- a **job loader** is provided into folder `job-scripts/job_loader.R`: it is responsible for launching a job, translating the parameters in the job file, and returning the output
+- sample job scripts are specified in directory `job-scripts/`.
+- a **job loader** is provided into directory `job-scripts/job_loader.R`: it is responsible for launching a job, translating the parameters in the job file, and returning the output
 - a job preloader can be run once per batch run, before the parameter sweep
 - output is stored in `batch-out/`
 - log is stored in `batch-out/workers.log`
@@ -23,6 +23,11 @@ Jobs are launched with script `script_job_launcher.R`.
 
 The batch runner is configurable with the YAML file `batch-opts.yaml`.
 
+All paths are relative to the directory `r-batch-runner`.   
+
+Job scripts can be stored elsewhere. 
+The job loader script (`job_loader.R`) is sourced from its directory, and is responsible for setting all other directories.
+
 ### Job creation
 
 Jobs are created with the script `script_job_make_jobfile.R`.    
@@ -34,7 +39,7 @@ Basically, it reads a template job file (`job_template.yaml`), substitutes param
 The job preloader is a function which accepts these arguments:
 
 - `log_writer`: a function which writes to the logfile
-- `path_output`: path to the `batch-out/` folder
+- `path_output`: path to the output directory
 
 It is called once, before the parameter sweep is carried out.
 
@@ -44,12 +49,12 @@ The job loader is a function which accepts these arguments:
 
 - `job_parameters`: everything which is read from the YAML file
 - `log_writer`: a function which writes to the logfile
-- `path_output`: path to the `batch-out/` folder
+- `path_output`: path to the output directory
 
-It is responsible for calling the job scripts in the `job-scripts/` folder.
+It is responsible for calling the job scripts in the `job-scripts/` directory.
 Their return value is returned to the main batch loop.
 
-If the return value is not `NULL`, results are saved to disk in the output folder, in a `.RData` file with the same name as the job.
+If the return value is not `NULL`, results are saved to disk in the output directory in a `.RData` file with the same name as the job.
 
 
 ### Logging
