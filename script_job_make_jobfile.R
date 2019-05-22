@@ -80,8 +80,8 @@ df_combinations <- purrr::cross_df(list(
       # Sample selection
       # k_ref = as.integer(c(10, 20, 30)),
       # k_quest = as.integer(c(10, 20, 30)),
-      k_ref = as.integer(5, 10),
-      k_quest = as.integer(1, 2, 5),
+      k_ref = list(5, 10, 20, 50) %>% map(as.integer),
+      k_quest = list(1, 2, 5, 10, 20, 50) %>% map(as.integer),
       
       
       # Iteration options
@@ -98,8 +98,17 @@ df_combinations <- purrr::cross_df(list(
    ))
 
 # Balanced sample
-# df_combinations <- df_combinations %>% 
+# df_combinations <- df_combinations %>%
 #    filter(k_ref == k_quest)
+
+# Balanced large samples, or reference-prevalent unbalanced small samples 
+df_combinations <- df_combinations %>% 
+   mutate(
+      is_balanced = k_ref == k_quest,
+      is_large = k_ref > 10 && k_quest > 10
+   ) %>% 
+   filter(k_ref >= k_quest) %>% 
+   filter(is_large && is_balanced || !is_large)
 
 cat('Generated configurations:\n')
 print(df_combinations)
