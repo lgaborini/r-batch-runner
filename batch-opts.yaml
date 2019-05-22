@@ -11,10 +11,10 @@ paths:
    path_jobs: 'jobs'
 
    # Path to folder which will contain output
-   path_output: 'batch-out'
+   path_output: '../batch-out'
    
    # Path to the job loader and preloader
-   path_job_loader: 'job-scripts/job_loader.R'
+   path_job_loader: '../batch_job_loader.R'
 
 logging:
    filename: 'workers.log'

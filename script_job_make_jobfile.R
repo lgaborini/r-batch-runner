@@ -8,7 +8,7 @@
 
 library(here)
 
-path_batch_folder <- here('.')
+path_batch_folder <- here('batch', 'r-batch-runner')
 
 source(file.path(path_batch_folder, 'batch-utilities', 'utilities_batch.R'))
 
@@ -41,20 +41,65 @@ dir.create(path_jobs, showWarnings = FALSE)
 # Parameter sweep ---------------------------------------------------------
 
 # Define jobfile basename
-jobfile_basename_default <- 'jobname'
+jobfile_basename_default <- 'FourierLR'
 
 # Define parameter sweeps
 # some parameters can be fixed
-list_param_1 <- c('a', 'b')
-list_param_2 <- c(0, 1, 2)
-list_param_fix <- 1000
 
 # Generate parameter sweep
 df_combinations <- purrr::cross_df(list(
-      param_1 = list_param_1, 
-      param_2 = list_param_2,
-      param_fix = list_param_fix
+   
+      # Data selection
+      # - must be a list of lists!
+      # - singletons are p.ex., list(list('1'))
+      which_harmonics = list(
+         # list('1'),    # only one variable! 
+         list('1', '2', '3')
+         # list('2'),
+         # list('3'), 
+         # list('4')
+      ),
+
+      # which character to consider for ref/quest/background
+      which_character = c('all'),
+      # words, letters or everything
+      which_region = c('all'),
+      
+      # Comparison configuration
+      # - random: randomly choose ref/quest
+      # - paired: try all combinations
+      
+      writer_comparison = c('random', 'paired'),
+      # writer_comparison = 'paired',
+      # writer_comparison = 'random',
+      
+      # For writer_comparison = 'random': which Hd to consider
+      Hd_source = list('same', 'unrelated', 'twin'),
+      
+      
+      # Sample selection
+      # k_ref = as.integer(c(10, 20, 30)),
+      # k_quest = as.integer(c(10, 20, 30)),
+      k_ref = as.integer(5, 10),
+      k_quest = as.integer(1, 2, 5),
+      
+      
+      # Iteration options
+      n_iter = as.integer(1000),
+      burn_in = as.integer(100),
+      
+      # Prior and initialization
+      use_priors = 'ML',
+      use_init = 'random',
+      
+      # Contents of background data
+      split_background = 'outside'
+      
    ))
+
+# Balanced sample
+# df_combinations <- df_combinations %>% 
+#    filter(k_ref == k_quest)
 
 cat('Generated configurations:\n')
 print(df_combinations)
@@ -68,7 +113,7 @@ print(df_combinations)
 # - `uuid` will be randomly generated
 # - column names from df_combinations can be used
 #
-str_filename_pattern <- '{basename}_param1={param_1}_param2={param_2}_{uuid}'
+str_filename_pattern <- '{basename}_h={which_harmonics}_char={which_character}_comp={writer_comparison}_Hd={Hd_source}_{uuid}'
 
 # Function which generates a file name from parameter combinations
 #
@@ -83,7 +128,7 @@ make_file_name <- function(df_combinations) {
    
    # Collapse lists in filenames
    df_combinations_friendly <- df_combinations_extended %>% 
-      mutate_if(is.list, ~ purrr::map_chr(.x, paste, collapse = ','))
+      mutate_if(is.list, ~ purrr::map_chr(.x, paste, collapse = ''))
    
    
    filenames <- glue_data(df_combinations_friendly, str_filename_pattern)
