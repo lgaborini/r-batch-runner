@@ -48,6 +48,10 @@ jobfile_basename_default <- 'FourierLR'
 
 # Generate parameter sweep
 df_combinations <- purrr::cross_df(list(
+   
+      # Data selection
+      # - must be a list of lists!
+      # - singletons are p.ex., list(list('1'))
       which_harmonics = list(
          # list('1'),    # only one variable! 
          list('1', '2', '3')
@@ -55,29 +59,47 @@ df_combinations <- purrr::cross_df(list(
          # list('3'), 
          # list('4')
       ),
-      # random: randomly choose ref/quest, paired: try all combinations
-      writer_comparison = c('random', 'paired'),
-      # writer_comparison = 'paired',
-      # writer_comparison = 'random',
+
       # which character to consider for ref/quest/background
       which_character = c('all'),
       # words, letters or everything
       which_region = c('all'),
+      
+      # Comparison configuration
+      # - random: randomly choose ref/quest
+      # - paired: try all combinations
+      
+      writer_comparison = c('random', 'paired'),
+      # writer_comparison = 'paired',
+      # writer_comparison = 'random',
+      
+      # For writer_comparison = 'random': which Hd to consider
+      Hd_source = list('same', 'unrelated', 'twin'),
+      
+      
+      # Sample selection
       # k_ref = as.integer(c(10, 20, 30)),
       # k_quest = as.integer(c(10, 20, 30)),
-      k_ref = as.integer(10),
-      k_quest = as.integer(10),
-      # for writer_comparison = 'random'
-      Hd_source = list('same', 'unrelated', 'twin'),
+      k_ref = as.integer(5, 10),
+      k_quest = as.integer(1, 2, 5),
+      
+      
+      # Iteration options
       n_iter = as.integer(1000),
       burn_in = as.integer(100),
+      
+      # Prior and initialization
       use_priors = 'ML',
       use_init = 'random',
+      
+      # Contents of background data
       split_background = 'outside'
+      
    ))
 
-df_combinations <- df_combinations %>% 
-   filter(k_ref == k_quest)
+# Balanced sample
+# df_combinations <- df_combinations %>% 
+#    filter(k_ref == k_quest)
 
 cat('Generated configurations:\n')
 print(df_combinations)
