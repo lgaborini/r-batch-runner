@@ -195,13 +195,13 @@ while (length(jobs_in_queue) > 0) {
       job_results$succeeded <- c(job_results$succeeded, job_file)
       write(job_results$succeeded, file = logfile_jobs_success, append = TRUE)
       
-      # Do something with job_output
+      # Do something with job_output: save
       if (!is.null(job_output)) {
          flog.debug('Have job output!')
          flog.debug(str(job_output))
          
          job_file_basename <- tools::file_path_sans_ext(basename(job_file))
-         file_output <- file.path(path_output, paste0(job_file_basename, '.RData'))
+         file_output <- normalizePath(file.path(path_output, paste0(job_file_basename, '.RData')), mustWork = FALSE)
          
          flog.info('Saving output in file "%s', file_output)
          save(job_output, file = file_output)
