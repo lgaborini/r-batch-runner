@@ -88,6 +88,9 @@ if (!exists('job_loader') || !is.function(job_loader)) {
    stop('Job loader not defined.')
 }
 
+# Wrap the job loader
+job_loader_safe <- purrr::safely(job_loader, quiet = FALSE)
+
 # Batch job definition -------------------------------------------------------------------
 
 # Queue definition: batch ends when queue is empty
@@ -154,14 +157,29 @@ while (length(jobs_in_queue) > 0) {
    time_start_global <- Sys.time()
    
    # Call the job loader
-   
    job_output <- withCallingHandlers(
       
-      job_loader(
-         job_parameters = job_parameters, 
-         log_writer = write_log, 
-         path_output = path_output
-      ),
+      {
+         
+         results_safe <- job_loader_safe(
+            job_parameters = job_parameters,
+            log_writer = write_log,
+            path_output = path_output
+         )
+         
+         # Re-throw error but re-catch it later
+         if (!is.null(results_safe$error)) {
+            signalCondition(results_safe$error)
+         }
+         
+         # Return the wrapped output
+         if (batch_opts$job_results$save_failures) {
+            results_safe
+         } else {
+            # NULL if error
+            results_safe$result
+         }
+      },
       
       warning = function(w) {
          flog.warn('Job returned a WARNING. Reason:\n%s\n', w)
@@ -203,9 +221,8 @@ while (length(jobs_in_queue) > 0) {
          job_file_basename <- tools::file_path_sans_ext(basename(job_file))
          file_output <- normalizePath(file.path(path_output, paste0(job_file_basename, '.RData')), mustWork = FALSE)
          
-         flog.info('Saving output in file "%s', file_output)
+         flog.info('Saving output in file "%s', file_output, '"')
          save(job_output, file = file_output)
-         flog.debug('Saved!')
       }
 
    } else {

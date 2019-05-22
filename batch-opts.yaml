@@ -29,5 +29,10 @@ notify:
    min_time: 600          
 
 job_creation:
+   # If true, clear /jobs directory before job creation
    clear_old_jobs: true
 
+job_results:
+   # If true, wrap job loader with purrr::safely, and save the entire structure
+   # If false, save only successful results from job loader
+   save_failures: false
