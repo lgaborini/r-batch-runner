@@ -147,6 +147,21 @@ while (length(jobs_in_queue) > 0) {
    }
    
    flog.info("Running job file '%s' [%d of %d].", job_file, i_job, n_jobs)
+
+   # Setup job output container, if job has output
+
+   job_file_basename <- tools::file_path_sans_ext(basename(job_file))
+   file_output <- normalizePath(file.path(path_output, paste0(job_file_basename, '.RData')), mustWork = FALSE)
+   
+   if (file.exists(file_output)) {
+      flog.info('Job already exists.')
+      if (batch_opts$job_results$overwrite) {
+            flog.info('Overwriting!')
+         } else {
+            flog.info('Skipping.')
+            next
+         }
+   }
    
    # Job run -------------------------------------------------------------------
 
@@ -217,9 +232,6 @@ while (length(jobs_in_queue) > 0) {
       if (!is.null(job_output)) {
          flog.debug('Have job output!')
          flog.debug(str(job_output))
-         
-         job_file_basename <- tools::file_path_sans_ext(basename(job_file))
-         file_output <- normalizePath(file.path(path_output, paste0(job_file_basename, '.RData')), mustWork = FALSE)
          
          flog.info('Saving output in file "%s', file_output, '"')
          save(job_output, file = file_output)
