@@ -226,7 +226,7 @@ while (length(jobs_in_queue) > 0) {
       
       # Append to succeeded jobs
       job_results$succeeded <- c(job_results$succeeded, job_file)
-      write(job_results$succeeded, file = logfile_jobs_success, append = TRUE)
+      write(job_file, file = logfile_jobs_success, append = TRUE)
       
       # Do something with job_output: save
       if (!is.null(job_output)) {
@@ -240,7 +240,7 @@ while (length(jobs_in_queue) > 0) {
    } else {
       # Append to failed jobs
       job_results$failed <- c(job_results$failed, job_file)
-      write(job_results$failed, file = logfile_jobs_fail, append = TRUE)
+      write(job_file, file = logfile_jobs_fail, append = TRUE)
    }
    
 }  # end job queue
