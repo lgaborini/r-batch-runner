@@ -52,10 +52,13 @@ The job loader is a function which accepts these arguments:
 - `path_output`: path to the output directory
 
 It is responsible for calling the job scripts in the `job-scripts/` directory.
-Their return value is returned to the main batch loop.
 
-If the return value is not `NULL`, results are saved to disk in the output directory in a `.RData` file with the same name as the job.
+The job loader is wrapped into a `purrr::safely` wrapper.
+It always returns a list with two components, `error` and `result`. One is always `NULL`.
 
+Errors are signaled and saved in component `error`, return values from the job loader are stored into component `result`.
+
+The return value is always saved to disk in the output directory, in a `.RData` file with the same name as the job.
 
 ### Logging
 
