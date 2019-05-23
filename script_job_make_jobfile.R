@@ -16,6 +16,7 @@ library(yaml)
 library(uuid)
 library(glue)
 library(dplyr)
+library(purrr)
 
 
 # Launcher configuration --------------------------------------------------
@@ -56,9 +57,19 @@ df_combinations <- purrr::cross_df(list(
       param_fix = list_param_fix
    ))
 
+
+# Refine combinations -----------------------------------------------------
+
+combination_fields <- colnames(df_combinations)
+
 cat('Generated configurations:\n')
 print(df_combinations)
 
+# Refine here...
+
+# Remove fields
+df_combinations <- df_combinations %>% 
+   select(one_of(combination_fields))
 
 # Generate job names ------------------------------------------------------
 
