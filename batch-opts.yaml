@@ -30,7 +30,8 @@ notify:
 
 job_creation:
    # If true, clear /jobs directory before job creation
-   clear_old_jobs: true
+   clear_old_jobs: false
+   # clear_old_jobs: true
 
 job_results:
    # If true, wrap job loader with purrr::safely, and save the entire structure

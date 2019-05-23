@@ -70,8 +70,7 @@ df_combinations <- purrr::cross_df(list(
       # - random: randomly choose ref/quest
       # - paired: try all combinations
       
-      writer_comparison = c('random', 'paired'),
-      # writer_comparison = 'paired',
+      writer_comparison = 'paired',
       # writer_comparison = 'random',
       
       # For writer_comparison = 'random': which Hd to sample from
@@ -81,8 +80,8 @@ df_combinations <- purrr::cross_df(list(
       #
       # For writer_comparison = 'paired': ignored
       # Hd is set to be all possible writer_quest
-      Hd_source = list('same', 'unrelated', 'twin'),
-      # Hd_source = list('any'),
+      # Hd_source = list('same', 'unrelated', 'twin'),
+      Hd_source = list('any'),
       
       # Sample selection
       # k_ref = as.integer(c(10, 20, 30)),
@@ -92,8 +91,11 @@ df_combinations <- purrr::cross_df(list(
       
       
       # Iteration options
-      n_iter = as.integer(1000),
-      burn_in = as.integer(100),
+      n_iter = as.integer(10000),
+      burn_in = as.integer(1000),
+      
+      # How many times a particular combination of parameters is repeated
+      n_trials = seq(10),
       
       # Prior and initialization
       use_priors = 'ML',
@@ -138,7 +140,7 @@ df_combinations <- df_combinations %>%
 # - `uuid` will be randomly generated
 # - column names from df_combinations can be used
 #
-str_filename_pattern <- '{basename}_h={which_harmonics}_char={which_character}_comp={writer_comparison}_Hd={Hd_source}_{uuid}'
+str_filename_pattern <- '{basename}_t={n_trials}_h={which_harmonics}_char={which_character}_comp={writer_comparison}_Hd={Hd_source}_{uuid}'
 
 # Function which generates a file name from parameter combinations
 #
@@ -173,7 +175,7 @@ n.combinations <- nrow(df_combinations)
 r <- 1
 for (r in seq(n.combinations)) {
 
-   cat(sprintf('Making jobfile %d of %d.\n', r, n.combinations))
+   cat(sprintf('\n* Making jobfile %d of %d.\n', r, n.combinations))
    
    # Load the template, then overwrite it
    yaml_template <- yaml::yaml.load_file(file.path(path_batch_folder, 'job_template.yaml'))
