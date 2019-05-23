@@ -13,7 +13,7 @@ source('sample_job.R')
 #'
 #' @param job_parameters job parameters as read from the YAML job file
 #' @param log_writer a function which writes to log
-#' @param path_output path to output folder
+#' @param path_output path to output directory
 #' @return the original return value
 job_loader <- function(job_parameters, log_writer, path_output) {
    
@@ -45,7 +45,7 @@ job_loader <- function(job_parameters, log_writer, path_output) {
 #' It is useful to load data.
 #'
 #' @param log_writer a function which writes to log
-#' @param path_output path to output folder
+#' @param path_output path to output directory
 #' @return nothing
 job_preloader <- function(log_writer, path_output) {
    
