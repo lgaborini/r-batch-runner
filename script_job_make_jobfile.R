@@ -16,6 +16,7 @@ library(yaml)
 library(uuid)
 library(glue)
 library(dplyr)
+library(purrr)
 
 
 # Launcher configuration --------------------------------------------------
@@ -73,9 +74,15 @@ df_combinations <- purrr::cross_df(list(
       # writer_comparison = 'paired',
       # writer_comparison = 'random',
       
-      # For writer_comparison = 'random': which Hd to consider
+      # For writer_comparison = 'random': which Hd to sample from
+      # - 'same': Hd = Hp
+      # - 'unrelated: Hd = Hd_u
+      # - 'twin: Hd = Hd_t
+      #
+      # For writer_comparison = 'paired': ignored
+      # Hd is set to be all possible writer_quest
       Hd_source = list('same', 'unrelated', 'twin'),
-      
+      # Hd_source = list('any'),
       
       # Sample selection
       # k_ref = as.integer(c(10, 20, 30)),
@@ -97,6 +104,11 @@ df_combinations <- purrr::cross_df(list(
       
    ))
 
+
+# Refine combinations -----------------------------------------------------
+
+combination_fields <- colnames(df_combinations)
+
 # Balanced sample
 # df_combinations <- df_combinations %>%
 #    filter(k_ref == k_quest)
@@ -113,6 +125,10 @@ df_combinations <- df_combinations %>%
 cat('Generated configurations:\n')
 print(df_combinations)
 
+
+# Remove fields
+df_combinations <- df_combinations %>% 
+   select(one_of(combination_fields))
 
 # Generate job names ------------------------------------------------------
 
