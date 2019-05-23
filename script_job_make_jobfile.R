@@ -111,6 +111,8 @@ df_combinations <- purrr::cross_df(list(
 
 combination_fields <- colnames(df_combinations)
 
+# Refine here...
+
 # Balanced sample
 # df_combinations <- df_combinations %>%
 #    filter(k_ref == k_quest)
@@ -126,7 +128,6 @@ df_combinations <- df_combinations %>%
 
 cat('Generated configurations:\n')
 print(df_combinations)
-
 
 # Remove fields
 df_combinations <- df_combinations %>% 
