@@ -8,9 +8,9 @@
 
 library(here)
 
-path_batch_folder <- here('batch', 'r-batch-runner')
+path_batch_directory <- here('batch', 'r-batch-runner')
 
-source(file.path(path_batch_folder, 'batch-utilities', 'utilities_batch.R'))
+source(file.path(path_batch_directory, 'batch-utilities', 'utilities_batch.R'))
 
 library(yaml)
 library(uuid)
@@ -21,7 +21,7 @@ library(purrr)
 
 # Launcher configuration --------------------------------------------------
 
-batch_opts <- yaml::read_yaml(file.path(path_batch_folder, 'batch-opts.yaml'))
+batch_opts <- yaml::read_yaml(file.path(path_batch_directory, 'batch-opts.yaml'))
 
 
 
@@ -29,7 +29,7 @@ batch_opts <- yaml::read_yaml(file.path(path_batch_folder, 'batch-opts.yaml'))
 
 # Setup output directory for yaml files
 # Create if empty
-path_jobs <- file.path(path_batch_folder, batch_opts$paths$path_jobs)
+path_jobs <- file.path(path_batch_directory, batch_opts$paths$path_jobs)
 
 # Clear old jobs
 if (batch_opts$job_creation$clear_old_jobs) {
@@ -179,7 +179,7 @@ for (r in seq(n.combinations)) {
    cat(sprintf('\n* Making jobfile %d of %d.\n', r, n.combinations))
    
    # Load the template, then overwrite it
-   yaml_template <- yaml::yaml.load_file(file.path(path_batch_folder, 'job_template.yaml'))
+   yaml_template <- yaml::yaml.load_file(file.path(path_batch_directory, 'job_template.yaml'))
    yaml_params <- yaml_template
    
    # Modify parameters

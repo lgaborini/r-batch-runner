@@ -4,16 +4,16 @@
 #    the script runs a default job (specified in file 'job_template.yaml'), 
 #    and all jobs in subdirectory 'jobs/'.
 #
-# All outputs are saved in output folder path_output = 'batch.out'
-# The output folder MUST exist.
+# All outputs are saved in output directory path_output = 'batch.out'
+# The output directory MUST exist.
 #--------------------------------------------
 
 rm(list = ls())
 
 library(here)
 
-# Path to batch-runner folder
-path_batch_folder <- here('batch', 'r-batch-runner')
+# Path to batch-runner directory
+path_batch_directory <- here('batch', 'r-batch-runner')
 
 # Launcher configuration --------------------------------------------------
 #
@@ -22,20 +22,20 @@ path_batch_folder <- here('batch', 'r-batch-runner')
 
 library(yaml)
 
-batch_opts <- yaml::read_yaml(file.path(path_batch_folder, 'batch-opts.yaml'))
+batch_opts <- yaml::read_yaml(file.path(path_batch_directory, 'batch-opts.yaml'))
 
 
 # Path configuration ------------------------------------------------------
 
 # Job input path
-path_jobs <- file.path(path_batch_folder, batch_opts$paths$path_jobs)
+path_jobs <- file.path(path_batch_directory, batch_opts$paths$path_jobs)
 
 # Job output path: must exist!
-path_output <- file.path(path_batch_folder, batch_opts$paths$path_output)
+path_output <- file.path(path_batch_directory, batch_opts$paths$path_output)
 stopifnot(dir.exists(path_output))
 
 # Job loader and preloader path
-path_job_loader <- file.path(path_batch_folder, batch_opts$paths$path_job_loader)
+path_job_loader <- file.path(path_batch_directory, batch_opts$paths$path_job_loader)
 
 
 
@@ -68,8 +68,8 @@ unlink(logfile_jobs_fail)
 
 # Batch job configuration -------------------------------------------------
 
-source(file.path(path_batch_folder, 'batch-utilities/utilities_batch.R'))
-source(file.path(path_batch_folder, 'batch-utilities/IFTTT.R'))
+source(file.path(path_batch_directory, 'batch-utilities/utilities_batch.R'))
+source(file.path(path_batch_directory, 'batch-utilities/IFTTT.R'))
 
 # dir.create(path_output, showWarnings = TRUE)
 
@@ -97,14 +97,14 @@ job_loader_safe <- purrr::safely(job_loader, quiet = FALSE)
 
 # Template job file
 # It is well-formatted YAML, contains a very fast test case, easy to check.
-job_file_start <- file.path(path_batch_folder, 'job_template.yaml')
+job_file_start <- file.path(path_batch_directory, 'job_template.yaml')
 # job_parameters <- yaml.load_file(job_file_start)
 
 # Load job chain: default, the template
 # jobs_in_queue <- list(job_file_start)
 jobs_in_queue <- list()
 
-# Load jobs from folder
+# Load jobs from directory
 jobs_in_queue <- c(jobs_in_queue, list.files(path_jobs, pattern = '*.yaml', full.names = TRUE))
 
 n_jobs <- length(jobs_in_queue)

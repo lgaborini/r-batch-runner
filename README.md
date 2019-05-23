@@ -5,9 +5,10 @@
 
 This directory contains a framework to run parametrized scripts in batch mode.
 
-- parameters for each job are read from `.yaml` files in directory `jobs/` 
+- parameters for each job are read from `.yaml` files (**job files**) in directory `jobs/` 
 - job files are generated using the script `script_job_make_jobfile.R`.    
-  The included script creates job files by sweeping parameters.
+  The included script creates job files by sweeping parameters.    
+  A job file contains an instance of these parameters.
 - sample job scripts are specified in directory `job-scripts/`.
 - a **job loader** is provided into directory `job-scripts/job_loader.R`: it is responsible for launching a job, translating the parameters in the job file, and returning the output
 - a job preloader can be run once per batch run, before the parameter sweep
@@ -16,6 +17,25 @@ This directory contains a framework to run parametrized scripts in batch mode.
 - all these options are configurable: `batch-opts.yaml`
 
 Jobs are launched with script `script_job_launcher.R`.
+
+## Example
+
+A sample job script is included.   
+
+The [sample job](job-scripts/sample_job.R) is a function which receives a list of parameters (`param_1`,
+`param_2`, `param_fix`), prints them to the console and sometimes fails, sometimes succeeds (returning them).
+
+The parameters are generated using the script [script_job_make_jobfile.R](script_job_make_jobfile.R).
+The function creates a set of jobs by varying the parameters across their cartesian product.
+
+The job creation function creates a set of job files in the directory `/jobs`.
+Job creation can be customized by editing the script.
+
+Currently, to each job a job name is associated. The job name is ought to be unique, and is used as the file name for both the job file, and the job output.
+
+Once job files are created, the batch job can be ran by running the script [script_job_launcher.R](script_job_launcher.R).   
+This sources the sample job functions, reads all `yaml` files in `/jobs`, executes the function using the provided parameters and saves each return value in directory `/batch-out`.    
+Logs are saved in the same directory.
 
 ## Components
 
@@ -72,7 +92,7 @@ The IFTTT key is needed: it is supposed to be stored in the environment variable
 
 If this variable is empty, no notifications are performed.
 
-Logging can be disabled in the `batch-opts.yaml` file.
+Notifications can be disabled in the `batch-opts.yaml` file.
 
 ## TODO
 
