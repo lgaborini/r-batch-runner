@@ -23,9 +23,7 @@ library(purrr)
 
 batch_opts <- yaml::read_yaml(file.path(path_batch_directory, 'batch-opts.yaml'))
 
-
-
-# Launcher options --------------------------------------------------------
+# Launcher options
 
 # Setup output directory for yaml files
 # Create if empty
@@ -44,8 +42,11 @@ dir.create(path_jobs, showWarnings = FALSE)
 # Define jobfile basename
 jobfile_basename_default <- 'FourierLR'
 
+# Batch job purpose: description, comments, ...
+jobfile_batch_description <- ''
+
 # Define parameter sweeps
-# some parameters can be fixed
+#    some parameters can be fixed: set them as list singletons, or outside lists
 
 # Generate parameter sweep
 df_combinations <- purrr::cross_df(list(
@@ -182,11 +183,19 @@ for (r in seq(n.combinations)) {
    yaml_template <- yaml::yaml.load_file(file.path(path_batch_directory, 'job_template.yaml'))
    yaml_params <- yaml_template
    
-   # Modify parameters
+
+   # Modify YAML parameters -------------------------------------------------------
+   
+   # Set current parameter sweep as "params" section in YAML
+   
    # yaml_params$params$param_1 <- df_combinations[r, 'param_1']
    yaml_params$params <- df_combinations[r, ]
    
    print(yaml_params$params)
+   
+   
+   # Set batch job description
+   yaml_params$job$batch_description <- jobfile_batch_description
 
    # Generate job filename ---------------------------------------------------
    
@@ -197,8 +206,12 @@ for (r in seq(n.combinations)) {
    # Set the name in YAML job file
    yaml_params$job$job_name <- jobfile_name
    
-   jobfile_name_full <- file.path(path_jobs, paste0(jobfile_name, '.yaml'))
+   # Full path for YAML job file
+   jobfile_name_full <- normalizePath(file.path(path_jobs, paste0(jobfile_name, '.yaml')), mustWork = FALSE)
    
+
+   # Write to YAML -----------------------------------------------------------
+
    cat(sprintf('Making job "%s"\n', jobfile_name))
 
    if (file.exists(jobfile_name_full)) {
