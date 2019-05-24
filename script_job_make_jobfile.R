@@ -67,33 +67,32 @@ df_combinations <- purrr::cross_df(list(
       # words, letters or everything
       which_region = c('all'),
       
-      # Comparison configuration
-      # - random: randomly choose ref/quest
-      # - paired: try all combinations
+      ## Comparison configuration
+      ## - random: randomly choose ref/quest
+      ## - paired: try all combinations
       
-      writer_comparison = 'paired',
-      # writer_comparison = 'random',
+      # writer_comparison = 'paired',
+      writer_comparison = 'random',
       
-      # For writer_comparison = 'random': which Hd to sample from
-      # - 'same': Hd = Hp
-      # - 'unrelated: Hd = Hd_u
-      # - 'twin: Hd = Hd_t
-      #
-      # For writer_comparison = 'paired': ignored
-      # Hd is set to be all possible writer_quest
-      # Hd_source = list('same', 'unrelated', 'twin'),
-      Hd_source = list('any'),
+      ## For writer_comparison = 'random': which Hd to sample from
+      ## - 'same': Hd = Hp
+      ## - 'unrelated: Hd = Hd_u
+      ## - 'twin: Hd = Hd_t
+      Hd_source = list('same', 'unrelated', 'twin'),
       
-      # Sample selection
-      # k_ref = as.integer(c(10, 20, 30)),
-      # k_quest = as.integer(c(10, 20, 30)),
+      ## For writer_comparison = 'paired': ignored
+      ## Hd is set to be all possible writer_quest
+      
+      # Hd_source = list('any'),
+      
+      ## Sample selection
       k_ref = list(5, 10, 20, 50) %>% map(as.integer),
       k_quest = list(1, 2, 5, 10, 20, 50) %>% map(as.integer),
       
       
       # Iteration options
-      n_iter = as.integer(10000),
-      burn_in = as.integer(1000),
+      n_iter = as.integer(100000),
+      burn_in = as.integer(10000),
       
       # How many times a particular combination of parameters is repeated
       n_trials = seq(10),
@@ -114,9 +113,13 @@ combination_fields <- colnames(df_combinations)
 
 # Refine here...
 
-# Balanced sample
+# Balanced sample: reference = questioned
 # df_combinations <- df_combinations %>%
 #    filter(k_ref == k_quest)
+
+# More reference than questioned samples
+df_combinations <- df_combinations %>% 
+   filter(k_ref >= k_quest)
 
 # Balanced large samples, or reference-prevalent unbalanced small samples 
 df_combinations <- df_combinations %>% 
