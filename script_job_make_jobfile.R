@@ -173,6 +173,12 @@ df_combinations %>%
    make_file_name() %>% 
    head(10) %>% 
    print()
+# 
+# if (interactive()) {
+#    if (rstudioapi::isAvailable())
+#       View(df_combinations)
+# }
+
 
 r <- readline(prompt = "Continue with job creation? [yn] (default: \"y\") ")
 if (!(identical(r, "y") || identical(r, ""))) stop('Exiting without saving.')
@@ -188,12 +194,10 @@ pb <- dplyr::progress_estimated(n.combinations)
 
 if (batch_opts$job_creation$verbose_output){
    # Log to screen
-   cat_output = ''
-   cat_cmd <- function(...) cat(..., file = cat_output)
+   cat_cmd <- cat
 } else {
    # Log to file, create progress bar
-   cat_output = file.path(path_batch_directory, 'job_creation.log')
-   cat_cmd <- function(...) cat(..., file = cat_output, append = TRUE)
+   cat_cmd <- function(...) invisible(NULL)
 }
 
 
