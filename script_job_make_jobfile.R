@@ -23,9 +23,7 @@ library(purrr)
 
 batch_opts <- yaml::read_yaml(file.path(path_batch_directory, 'batch-opts.yaml'))
 
-
-
-# Launcher options --------------------------------------------------------
+# Launcher options
 
 # Setup output directory for yaml files
 # Create if empty
@@ -105,26 +103,51 @@ cat('Expected file names:\n')
 
 df_combinations %>% 
    make_file_name() %>% 
-   print
+   head(10) %>% 
+   print()
 
+r <- readline(prompt = "Continue with job creation? [yn] (default: \"y\") ")
+if (!(identical(r, "y") || identical(r, ""))) stop('Exiting without saving.')
+
+message('Starting job creation.')
 
 # Generate job files ------------------------------------------------------
 
 n.combinations <- nrow(df_combinations)
+
+# Create progress bar
+pb <- dplyr::progress_estimated(n.combinations)
+
+if (batch_opts$job_creation$verbose_output){
+   # Log to screen
+   cat_output = ''
+   cat_cmd <- function(...) cat(..., file = cat_output)
+} else {
+   # Log to file, create progress bar
+   cat_output = file.path(path_batch_directory, 'job_creation.log')
+   cat_cmd <- function(...) cat(..., file = cat_output, append = TRUE)
+}
+
+
 r <- 1
 for (r in seq(n.combinations)) {
 
-   cat(sprintf('Making jobfile %d of %d.\n', r, n.combinations))
+   cat_cmd(sprintf('\n* Making jobfile %d of %d.\n', r, n.combinations))
    
    # Load the template, then overwrite it
    yaml_template <- yaml::yaml.load_file(file.path(path_batch_directory, 'job_template.yaml'))
    yaml_params <- yaml_template
    
-   # Modify parameters
+
+   # Modify YAML parameters -------------------------------------------------------
+   
+   # Set current parameter sweep as "params" section in YAML
+   
    # yaml_params$params$param_1 <- df_combinations[r, 'param_1']
    yaml_params$params <- df_combinations[r, ]
    
-   print(yaml_params$params)
+   # Print to screen
+   # yaml_params$params)
 
    # Generate job filename ---------------------------------------------------
    
@@ -135,14 +158,23 @@ for (r in seq(n.combinations)) {
    # Set the name in YAML job file
    yaml_params$job$job_name <- jobfile_name
    
-   jobfile_name_full <- file.path(path_jobs, paste0(jobfile_name, '.yaml'))
+   # Full path for YAML job file
+   jobfile_name_full <- normalizePath(file.path(path_jobs, paste0(jobfile_name, '.yaml')), mustWork = FALSE)
    
-   cat(sprintf('Making job "%s"\n', jobfile_name))
+
+   # Write to YAML -----------------------------------------------------------
+
+   cat_cmd(sprintf('Making job "%s"\n', jobfile_name))
 
    if (file.exists(jobfile_name_full)) {
       stop(paste('File', jobfile_name_full, ' already exists!'))
    }
    write(as.yaml(yaml_params), jobfile_name_full)
    
-   cat(sprintf('Wrote jobfile "%s".\n', jobfile_name_full))
+   cat_cmd(sprintf('Wrote jobfile "%s".\n', jobfile_name_full))
+   
+   # Tick the progress bar if not verbose
+   if (!batch_opts$job_creation$verbose_output){
+      print(pb$tick())
+   }
 }
