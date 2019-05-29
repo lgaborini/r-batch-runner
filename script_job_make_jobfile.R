@@ -8,6 +8,7 @@
 
 library(here)
 
+# path_batch_directory <- here('..', '..', 'batch', 'r-batch-runner')
 path_batch_directory <- here('batch', 'r-batch-runner')
 
 source(file.path(path_batch_directory, 'batch-utilities', 'utilities_batch.R'))
@@ -43,7 +44,7 @@ dir.create(path_jobs, showWarnings = FALSE)
 jobfile_basename_default <- 'FourierLR'
 
 # Batch job purpose: description, comments, ...
-jobfile_batch_description <- ''
+jobfile_batch_description <- 'Run 100 trials per comparison; only random, reference-dominant'
 
 # Define parameter sweeps
 #    some parameters can be fixed: set them as list singletons, or outside lists
@@ -91,11 +92,11 @@ df_combinations <- purrr::cross_df(list(
       
       
       # Iteration options
-      n_iter = as.integer(100000),
-      burn_in = as.integer(10000),
+      n_iter = as.integer(10000),
+      burn_in = as.integer(1000),
       
       # How many times a particular combination of parameters is repeated
-      n_trials = seq(10),
+      n_trials = seq(100),
       
       # Prior and initialization
       use_priors = 'ML',
@@ -118,17 +119,17 @@ combination_fields <- colnames(df_combinations)
 #    filter(k_ref == k_quest)
 
 # More reference than questioned samples
-df_combinations <- df_combinations %>% 
+df_combinations <- df_combinations %>%
    filter(k_ref >= k_quest)
 
-# Balanced large samples, or reference-prevalent unbalanced small samples 
-df_combinations <- df_combinations %>% 
-   mutate(
-      is_balanced = k_ref == k_quest,
-      is_large = k_ref > 10 && k_quest > 10
-   ) %>% 
-   filter(k_ref >= k_quest) %>% 
-   filter(is_large && is_balanced || !is_large)
+# Balanced large samples, or reference-dominant unbalanced small samples 
+# df_combinations <- df_combinations %>% 
+#    mutate(
+#       is_balanced = k_ref == k_quest,
+#       is_large = k_ref > 10 && k_quest > 10
+#    ) %>% 
+#    filter(k_ref >= k_quest) %>% 
+#    filter(is_large && is_balanced || !is_large)
 
 cat('Generated configurations:\n')
 print(df_combinations)
