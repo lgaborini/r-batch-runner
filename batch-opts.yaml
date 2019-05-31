@@ -2,12 +2,12 @@
 #
 
 paths:
-   # Trailing slashes are allowed but not tested for.
-   #
-   # All paths are relative to the current file.
-   #
+   ## Trailing slashes are allowed but not tested for.
+   ##
+   ## All paths are relative to the current file.
+   ##
    
-   # Path to directory containing '.yaml' jobs
+   ## Path to directory containing '.yaml' jobs
    path_jobs: 'jobs'
 
    # Path to directory which will contain output
@@ -23,21 +23,22 @@ logging:
    filename_succeed: 'jobs_succeeded.log'
    
 notify:
-   # Activate IFTTT service
+   ## Activate IFTTT service
    use: no
-   # Minimum running time [seconds] to create a notification
+   ## Minimum running time [seconds] to create a notification
    min_time: 600          
 
 job_creation:
-   # If true, clear /jobs directory before job creation
+   ## If true, clear /jobs directory before job creation
    # clear_old_jobs: false
    clear_old_jobs: true
-   # if false, output creation to disk and show only a progress bar
+   ## If false, output creation to disk and show only a progress bar
    verbose_output: false
 
 job_results:
-   # If true, wrap job loader with purrr::safely, and save the entire structure
-   # If false, save only successful results from job loader
+   ## If true, wrap job loader with purrr::safely, and save the entire structure
+   ## If false, save only successful results from job loader
    save_failures: false
-   # If true, re-run jobs which already have results in the output directory.
+   ## If true, re-run jobs which already have results in the output directory.
+   # overwrite: true
    overwrite: false
