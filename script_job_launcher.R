@@ -116,10 +116,39 @@ if (identical(jobs_in_queue, list(job_file_start))) {
 }
 
 
+
 # Job preloading
 # e.g. to load data, set seed, etc.
 #
 job_preloader(log_writer = write_log, path_output = path_output)
+
+
+
+
+# Test run job
+# 
+# seed_candidates <- seq(100)
+# s <- 7
+# for (s in seed_candidates) {
+#    
+#    print(paste('Seed ', s))
+# 
+#    
+#    set.seed(s); r <- job_loader_safe(
+#       job_parameters = readRDS('pm_job_parameters.rds'),
+#       log_writer = invisible,
+#       path_output = list()
+#    )
+#    
+#    if (!is.null(r$error)) {
+#       print(s)
+#       stop('Found failure case.')
+#    }
+#    
+# }
+# 
+# stop('Exit')
+
 
 while (length(jobs_in_queue) > 0) {
    
@@ -146,7 +175,7 @@ while (length(jobs_in_queue) > 0) {
       jobs_in_queue <- c(jobs_in_queue, job_parameters$job$next.job)
    }
    
-   flog.info("Running job file '%s' [%d of %d].", job_file, i_job, n_jobs)
+   flog.info("[Job %d of %d - %.0f%%] Running job file '%s'.", i_job, n_jobs, i_job/n_jobs * 100, job_file)
 
    # Setup job output container, if job has output
 
