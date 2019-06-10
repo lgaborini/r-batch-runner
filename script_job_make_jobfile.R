@@ -148,15 +148,21 @@ df_combinations <- df_combinations %>%
 #
 str_filename_pattern <- '{basename}_t={n_trials}_h={which_harmonics}_char={which_character}_comp={writer_comparison}_Hd={Hd_source}_{uuid}'
 
+
+n.combinations <- nrow(df_combinations)
+
 # Function which generates a file name from parameter combinations
 #
 # Also adds further fields, as required by the format string
 make_file_name <- function(df_combinations) {
    
+   n_combinations <- nrow(df_combinations)
+   
    df_combinations_extended <- df_combinations %>% 
       mutate(
          basename = jobfile_basename_default,
-         uuid = make_uuid(12)
+         # uuid = make_uuid(12)
+         uuid = stringi::stri_rand_strings(n_combinations, 12)
       )
    
    # Collapse lists in filenames
@@ -188,7 +194,6 @@ message('Starting job creation.')
 
 # Generate job files ------------------------------------------------------
 
-n.combinations <- nrow(df_combinations)
 
 # Create progress bar
 pb <- dplyr::progress_estimated(n.combinations)
