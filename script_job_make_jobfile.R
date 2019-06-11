@@ -182,3 +182,7 @@ for (r in seq(n.combinations)) {
       print(pb$tick())
    }
 }
+
+message('Jobs created!')
+
+
