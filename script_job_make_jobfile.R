@@ -44,7 +44,7 @@ dir.create(path_jobs, showWarnings = FALSE)
 jobfile_basename_default <- 'FourierLR'
 
 # Batch job purpose: description, comments, ...
-jobfile_batch_description <- 'Run 100 trials per comparison; only random, reference-dominant'
+jobfile_batch_description <- 'Run 100 trials per comparison; random, symmetric, by character, new data, 4 harmonics (1+2+3+4)'
 
 # Define parameter sweeps
 #    some parameters can be fixed: set them as list singletons, or outside lists
@@ -57,14 +57,15 @@ df_combinations <- purrr::cross_df(list(
       # - singletons are p.ex., list(list('1'))
       which_harmonics = list(
          # list('1'),    # only one variable! 
-         list('1', '2', '3')
+         list('1', '2', '3', '4')
          # list('2'),
          # list('3'), 
          # list('4')
       ),
 
       # which character to consider for ref/quest/background
-      which_character = c('all'),
+      # which_character = c('all'),
+      which_character = list('a', 'd', 'o'),
       # words, letters or everything
       which_region = c('all'),
       
@@ -88,7 +89,9 @@ df_combinations <- purrr::cross_df(list(
       
       ## Sample selection
       k_ref = list(5, 10, 20, 50) %>% map(as.integer),
+      # k_ref = list(5) %>% map(as.integer),
       k_quest = list(1, 2, 5, 10, 20, 50) %>% map(as.integer),
+      # k_quest = list(5) %>% map(as.integer),
       
       
       # Iteration options
@@ -97,6 +100,7 @@ df_combinations <- purrr::cross_df(list(
       
       # How many times a particular combination of parameters is repeated
       n_trials = seq(100),
+      # n_trials = seq(1),
       
       # Prior and initialization
       use_priors = 'ML',
@@ -115,12 +119,12 @@ combination_fields <- colnames(df_combinations)
 # Refine here...
 
 # Balanced sample: reference = questioned
-# df_combinations <- df_combinations %>%
-#    filter(k_ref == k_quest)
+df_combinations <- df_combinations %>%
+   filter(k_ref == k_quest)
 
 # More reference than questioned samples
-df_combinations <- df_combinations %>%
-   filter(k_ref >= k_quest)
+# df_combinations <- df_combinations %>%
+#    filter(k_ref >= k_quest)
 
 # Balanced large samples, or reference-dominant unbalanced small samples 
 # df_combinations <- df_combinations %>% 
@@ -137,6 +141,8 @@ print(df_combinations)
 # Remove fields
 df_combinations <- df_combinations %>% 
    select(one_of(combination_fields))
+
+
 
 # Generate job names ------------------------------------------------------
 
