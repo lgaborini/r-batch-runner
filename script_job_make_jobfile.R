@@ -44,7 +44,7 @@ dir.create(path_jobs, showWarnings = FALSE)
 jobfile_basename_default <- 'FourierLR'
 
 # Batch job purpose: description, comments, ...
-jobfile_batch_description <- 'Run 100 trials per comparison; random, symmetric, by character, new data, 4 harmonics (1+2+3+4)'
+jobfile_batch_description <- 'Run 100 trials per comparison; paired, symmetric, new data, 4 harmonics, character-dependent, for paper'
 
 # Define parameter sweeps
 #    some parameters can be fixed: set them as list singletons, or outside lists
@@ -73,24 +73,24 @@ df_combinations <- purrr::cross_df(list(
       ## - random: randomly choose ref/quest
       ## - paired: try all combinations
       
-      # writer_comparison = 'paired',
-      writer_comparison = 'random',
+      writer_comparison = 'paired',
+      # writer_comparison = 'random',
       
       ## For writer_comparison = 'random': which Hd to sample from
       ## - 'same': Hd = Hp
       ## - 'unrelated: Hd = Hd_u
       ## - 'twin: Hd = Hd_t
-      Hd_source = list('same', 'unrelated', 'twin'),
+      # Hd_source = list('same', 'unrelated', 'twin'),
       
       ## For writer_comparison = 'paired': ignored
       ## Hd is set to be all possible writer_quest
       
-      # Hd_source = list('any'),
+      Hd_source = list('any'),
       
       ## Sample selection
-      k_ref = list(5, 10, 20, 50) %>% map(as.integer),
+      k_ref = list(5, 10, 20, 30, 50) %>% map(as.integer),
       # k_ref = list(5) %>% map(as.integer),
-      k_quest = list(1, 2, 5, 10, 20, 50) %>% map(as.integer),
+      k_quest = list(1, 2, 5, 10, 20, 30, 50) %>% map(as.integer),
       # k_quest = list(5) %>% map(as.integer),
       
       
@@ -136,7 +136,7 @@ df_combinations <- df_combinations %>%
 #    filter(is_large && is_balanced || !is_large)
 
 cat('Generated configurations:\n')
-print(df_combinations)
+print(df_combinations, width = 200)
 
 # Remove fields
 df_combinations <- df_combinations %>% 
