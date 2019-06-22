@@ -68,8 +68,8 @@ unlink(logfile_jobs_fail)
 
 # Batch job configuration -------------------------------------------------
 
-source(file.path(path_batch_directory, 'batch-utilities/utilities_batch.R'))
-source(file.path(path_batch_directory, 'batch-utilities/IFTTT.R'))
+source(file.path(path_batch_directory, 'batch-utilities/utilities_batch.R'), local = TRUE)
+source(file.path(path_batch_directory, 'batch-utilities/IFTTT.R'), local = TRUE)
 
 # dir.create(path_output, showWarnings = TRUE)
 
@@ -78,7 +78,7 @@ job_results <- list(failed = NULL, succeeded = NULL)
 
 # Job definition
 # This is run using local paths!
-source(path_job_loader, chdir = TRUE)
+source(path_job_loader, chdir = TRUE, local = TRUE)
 
 if (!exists('job_preloader') || !is.function(job_preloader)) {
    stop('Job preloader not defined.')

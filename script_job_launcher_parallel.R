@@ -11,22 +11,22 @@
 rm(list = ls())
 
 library(here)
-
-# Path to batch-runner directory
-path_batch_directory <- here('batch', 'r-batch-runner')
-
+library(yaml)
+library(futile.logger)
 
 # Parallel processing
 library(foreach)
 library(parallel)
 library(doParallel)
 
+# Path to batch-runner directory
+path_batch_directory <- here('batch', 'r-batch-runner')
+
 # Launcher configuration --------------------------------------------------
 #
 # Load global options for the batch script
 #
 
-library(yaml)
 
 batch_opts <- yaml::read_yaml(file.path(path_batch_directory, 'batch-opts.yaml'))
 
@@ -42,12 +42,12 @@ stopifnot(dir.exists(path_output))
 
 # Job loader and preloader path
 path_job_loader <- file.path(path_batch_directory, batch_opts$paths$path_job_loader)
+# path_job_loader <- file.path(path_batch_directory, 'job-scripts', 'job_loader.R')
 
 
 
 # Logfile configuration ---------------------------------------------------
 
-library(futile.logger)
 
 logfile <- file.path(path_output, batch_opts$logging$filename)
 
@@ -55,8 +55,21 @@ logfile <- file.path(path_output, batch_opts$logging$filename)
 flog.appender(appender.tee(logfile), name = 'ROOT')
 # flog.appender(appender.console(), name = 'ROOT')
 
-# flog.threshold(DEBUG, name = 'ROOT')
-flog.threshold(INFO, name = 'ROOT')
+flog.threshold(DEBUG, name = 'ROOT')
+# flog.threshold(INFO, name = 'ROOT')
+
+
+layout.worker <- function(level, msg, ...){
+   the.time <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+   if (length(list(...)) > 0) {
+      parsed <- lapply(list(...), function(x) ifelse(is.null(x), 
+                                                     "NULL", x))
+      msg <- do.call(sprintf, c(msg, parsed))
+   }
+   sprintf("%s [%s][Worker %d] %s\n", names(level), the.time, Sys.getpid(), msg)
+}
+
+flog.layout(layout.worker)
 
 
 # A function which writes to log
@@ -86,6 +99,18 @@ job_results <- list(failed = NULL, succeeded = NULL)
 # This is run using local paths!
 source(path_job_loader, chdir = TRUE, local = TRUE)
 
+job_loader <- function(log_writer) {
+   log_writer('job_loader: trying computation')
+   x <- rbinom(1, 10, 0.5)
+   log_writer('job_loader: got %d', x)
+   if (x %% 2 == 0) {
+      stop('job_loader: fail!')
+   } else {
+      log_writer('job_loader: success!')
+   }
+   return(x)
+}
+
 if (!exists('job_preloader') || !is.function(job_preloader)) {
    stop('Job preloader not defined.')
 }
@@ -96,6 +121,8 @@ if (!exists('job_loader') || !is.function(job_loader)) {
 
 # Wrap the job loader
 job_loader_safe <- purrr::safely(job_loader, quiet = FALSE)
+
+flog.info('Job defined.\n')
 
 # Batch job definition -------------------------------------------------------------------
 
@@ -157,9 +184,12 @@ job_preloader(log_writer = write_log, path_output = path_output)
 
 registerDoParallel()
 
-foreach(i_job = seq_along(jobs_in_queue),
+list_results <- foreach(i_job = seq_along(jobs_in_queue),
         .packages = c('futile.logger', 'yaml', 'purrr'),
-        .export = 'fun_compute_LR_Fourier') %dopar% {
+        .errorhandling = 'pass',
+        .inorder = FALSE
+        ) %dopar% {
+
            
            # Process the job queue ---------------------------------------------------------
            
@@ -185,7 +215,8 @@ foreach(i_job = seq_along(jobs_in_queue),
                  flog.info('Overwriting!')
               } else {
                  flog.info('Skipping.')
-                 next
+                 # next
+                 return(list(job_file = job_file, job_success = 'skip'))
               }
            }
            
@@ -195,44 +226,36 @@ foreach(i_job = seq_along(jobs_in_queue),
            
            # Call the job loader
            job_output <- withCallingHandlers(
-              
               {
                  
-                 results_safe <- job_loader_safe(
-                    job_parameters = job_parameters,
-                    log_writer = write_log,
-                    path_output = path_output
-                 )
+                 # results_safe <- job_loader_safe(
+                 #    job_parameters = job_parameters,
+                 #    log_writer = write_log,
+                 #    path_output = path_output
+                 # )
+                 results_safe <- job_loader_safe(log_writer = write_log)
                  
                  # Re-throw error but re-catch it later
-                 if (!is.null(results_safe$error)) {
-                    signalCondition(results_safe$error)
-                 }
-                 
+                 # if (!is.null(results_safe$error)) {
+                 #    signalCondition(results_safe$error)
+                 # }
+
                  # Return the wrapped output
-                 if (batch_opts$job_results$save_failures) {
-                    results_safe
-                 } else {
-                    # NULL if error
-                    results_safe$result
-                 }
+                 results_safe
               },
               
               warning = function(w) {
                  flog.warn('Job returned a WARNING. Reason:\n%s\n', w)
               },
-              
               error = function(e) {
                  flog.error('Job failed. Reason:\n%s\n', e)
                  
                  job_success <<- FALSE
-              },
-              
-              finally = {
-                 flog.info(sprintf("Job file '%s' finished.", job_file))
-                 flog.info('---')
               }
            )
+           
+           flog.info(sprintf("[Job %d of %d - %.0f%%] Job file '%s' finished.", job_file))
+           flog.info('---')
            
            if (job_success == TRUE) {
               flog.debug('Job "%s" succeeded.', job_file)
@@ -250,12 +273,12 @@ foreach(i_job = seq_along(jobs_in_queue),
               }
               
            } else {
-              # Append to failed jobs
+              flog.debug('Job "%s" failed.', job_file)
+              # Append to failed jobs``
               write(job_file, file = logfile_jobs_fail, append = TRUE)
            }
            list(job_file = job_file, job_success = job_success)
         }  # end job queue
-
 
 
 write_log('---')
@@ -279,6 +302,8 @@ write_log('---')
 
 # Save logfile to batch_output
 invisible(file.copy(from = logfile, to = logfile_last, overwrite = TRUE, copy.date = TRUE))
+
+browser()
 
 write_log('---')
 write_log('Batch finished.')
