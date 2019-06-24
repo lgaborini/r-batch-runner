@@ -18,6 +18,7 @@ paths:
    
 parallel:
    ## Run parallel
+   #run_parallel: false
    run_parallel: true
    ## if not defined or blank, use n_cores - 1
    max_workers: 
