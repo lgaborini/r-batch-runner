@@ -226,7 +226,7 @@ if (batch_opts$parallel$run_parallel == FALSE) {
 } else {
 
    if (is.null(batch_opts$parallel$max_workers)) {
-      n_workers_max <- max(c(parallel::detectCores() - 1, 1))
+      n_workers_max <- max(c(parallel::detectCores(), 1))
    } else {
       n_workers_max <- min(c(batch_opts$parallel$max_workers, parallel::detectCores()))
    }
