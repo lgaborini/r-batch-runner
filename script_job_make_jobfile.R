@@ -98,7 +98,7 @@ make_file_name <- function(df_combinations) {
    
    # Collapse lists in filenames
    df_combinations_friendly <- df_combinations_extended %>% 
-      mutate_if(is.list, ~ purrr::map_chr(.x, paste, collapse = ','))
+      mutate_if(is.list, ~ purrr::map_chr(.x, paste, collapse = ''))
    
    
    filenames <- glue_data(df_combinations_friendly, str_filename_pattern)
@@ -156,7 +156,7 @@ for (r in seq(n.combinations)) {
    yaml_params$params <- df_combinations[r, ]
    
    # Print to screen
-   # yaml_params$params)
+   # yaml_params$params %>% glimpse() %>% print()
 
    # Generate job filename ---------------------------------------------------
    

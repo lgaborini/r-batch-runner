@@ -14,3 +14,15 @@ is_AWS <- function() {
 
 # Generate short UUID to use in filenames
 make_uuid <- function(len=12) { substr(gsub('-', '', uuid::UUIDgenerate()), 1, len) }
+
+
+
+#' Like str, but to string
+#'
+#' @param x object to describe
+#' @param type what to capture, as in `sink()` (default: `'output'`)
+#' @param ... other parameters to `str()`
+#' @return all output of `str(x)`, as character vectors
+str_str <- function(x, type = 'output', ...) {
+   capture.output(str(x,...), type = 'output')
+}

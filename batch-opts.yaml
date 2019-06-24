@@ -10,11 +10,18 @@ paths:
    ## Path to directory containing '.yaml' jobs
    path_jobs: 'jobs'
 
-   # Path to directory which will contain output
+   ## Path to directory which will contain output
    path_output: 'batch-out'
    
-   # Path to the job loader and preloader
+   ## Path to the job loader and preloader
    path_job_loader: 'job-scripts/job_loader.R'
+   
+parallel:
+   ## Run parallel
+   #run_parallel: false
+   run_parallel: true
+   ## if not defined or blank, use n_cores - 1
+   max_workers: 
 
 logging:
    filename: 'workers.log'
