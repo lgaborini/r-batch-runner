@@ -15,6 +15,12 @@ paths:
    
    ## Path to the job loader and preloader
    path_job_loader: '../batch_job_loader.R'
+   
+parallel:
+   ## Run parallel
+   run_parallel: true
+   ## if not defined or blank, use n_cores - 1
+   max_workers: 
 
 logging:
    filename: 'workers.log'
