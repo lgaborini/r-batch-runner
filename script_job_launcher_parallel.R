@@ -403,7 +403,7 @@ list_results <- foreach(i_job = seq_along(jobs_in_queue),
       # Do something with job_output: save
       if (!is.null(job_output$result)) {
          flog.debug('Have job output!')
-         flog.debug(str_str(job_output))
+         # flog.debug(str_str(job_output, nchar.max = 100, max.level = 2))
          
          flog.info('Saving output in file "%s"', file_output)
          save(job_output, file = file_output)
