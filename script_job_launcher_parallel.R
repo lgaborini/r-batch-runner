@@ -20,7 +20,7 @@ library(parallel)
 library(doParallel)
 
 # Path to batch-runner directory
-path_batch_directory <- here('batch', 'r-batch-runner')
+path_batch_directory <- here('.')
 
 # Launcher configuration --------------------------------------------------
 #
