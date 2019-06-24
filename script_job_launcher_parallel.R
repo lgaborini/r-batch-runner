@@ -71,12 +71,10 @@ if (file.exists(logfile)){
 
 # Parallel configuration
 
-flog.appender_fun <- appender.console
+# flog.appender_fun <- appender.console
 flog.appender_fun <- appender.tee
-flog.appender_fun <- appender.file
-# flog.appender(appender.file(logfile), name = 'ROOT')
+# flog.appender_fun <- appender.file
 flog.appender(flog.appender_fun(logfile), name = 'ROOT')
-# flog.appender(appender.console(), name = 'ROOT')
 
 # flog_thr_level <- INFO
 flog_thr_level <- DEBUG
@@ -111,40 +109,40 @@ job_results <- list(failed = NULL, succeeded = NULL)
 flog.info('Reading job loader/preloader definitions.')
 source(path_job_loader, chdir = TRUE, local = TRUE)
 
-# sample job which explores conditions
-job_loader <- function(log_writer) {
-   log_writer('job_loader: trying computation')
-   x <- sample.int(9, 1)
-   log_writer('job_loader: got %d', x)
-   is_clean_success <- TRUE
-   
-   if (x %% 2 == 0) {
-      is_clean_success <- FALSE
-      stop('job_loader: fail, got even number!')
-   }
-   if (x %% 3 == 0) {
-      is_clean_success <- FALSE
-      warning('job_loader: warning, got multiple of 3!')
-   }
-   if (x == 7) {
-      is_clean_success <- FALSE
-      warning('job_loader: obtained 7, throwing warning 1/2')
-      warning('job_loader: obtained 7, throwing warning 2/2')
-   }
-   if (x == 9) {
-      is_clean_success <- FALSE
-      warning('job_loader: obtained 9, throwing warning')
-      stop('job_loader: obtained 9, ERROR.')
-   }
-   if (x == 1) {
-      is_clean_success <- FALSE
-      warning('job_loader: obtained 1, throwing warning 1/2')
-      stop('job_loader: obtained 1, ERROR')
-      warning('job_loader: obtained 1, throwing warning 2/2')
-   }
-   log_writer('job_loader: reached end of function, %s', ifelse(is_clean_success, 'successfully', 'with warnings'))
-   return(x)
-}
+# # sample job which explores conditions
+# job_loader <- function(log_writer) {
+#    log_writer('job_loader: trying computation')
+#    x <- sample.int(9, 1)
+#    log_writer('job_loader: got %d', x)
+#    is_clean_success <- TRUE
+#    
+#    if (x %% 2 == 0) {
+#       is_clean_success <- FALSE
+#       stop('job_loader: fail, got even number!')
+#    }
+#    if (x %% 3 == 0) {
+#       is_clean_success <- FALSE
+#       warning('job_loader: warning, got multiple of 3!')
+#    }
+#    if (x == 7) {
+#       is_clean_success <- FALSE
+#       warning('job_loader: obtained 7, throwing warning 1/2')
+#       warning('job_loader: obtained 7, throwing warning 2/2')
+#    }
+#    if (x == 9) {
+#       is_clean_success <- FALSE
+#       warning('job_loader: obtained 9, throwing warning')
+#       stop('job_loader: obtained 9, ERROR.')
+#    }
+#    if (x == 1) {
+#       is_clean_success <- FALSE
+#       warning('job_loader: obtained 1, throwing warning 1/2')
+#       stop('job_loader: obtained 1, ERROR')
+#       warning('job_loader: obtained 1, throwing warning 2/2')
+#    }
+#    log_writer('job_loader: reached end of function, %s', ifelse(is_clean_success, 'successfully', 'with warnings'))
+#    return(x)
+# }
 
 
 # Wrap the job loader
@@ -324,21 +322,17 @@ list_results <- foreach(i_job = seq_along(jobs_in_queue),
    
    # Job run -------------------------------------------------------------------
    
-   # foreach_output$job_success <- TRUE
-   # foreach_output$job_status <- 'success'
    job_status_detail <- NULL     # detail for last condition thrown
-   # foreach_output$job_conditions <- list()      # collect all thrown conditions
    
    # Call the job loader
-   # results_safe <- job_loader_safe(
-   #    job_parameters = job_parameters,
-   #    log_writer = write_log,
-   #    path_output = path_output
-   # )
    
    results_safe <- withCallingHandlers(
       withRestarts({
-            job_loader(log_writer = write_log)
+            job_loader(
+               job_parameters = job_parameters,
+               log_writer = write_log,
+               path_output = path_output
+            )
          },
          muffleWarning = function(w){},
          muffleStop = function(e){}
@@ -375,26 +369,6 @@ list_results <- foreach(i_job = seq_along(jobs_in_queue),
    flog.debug('All conditions: ', str_str(foreach_output$job_conditions))
    flog.debug('Foreach return value:')
    flog.debug(str_str(foreach_output))
-   
-   # results_safe <- job_loader_quiet(log_writer = write_log)
-   
-   # if (!is.null(results_safe$error)) {
-   #    job_output <- list(result=NULL, error=results_safe$error)
-   # } else {
-   #    
-   # }
-   
-   # if (!is.null(results_safe$error)) {
-   #    flog.error('Job failed. Reason:\n%s\n', results_safe$error)
-   #    job_output <- NULL
-   #    
-   # } else {
-   #    if (!length(results_safe$warnings) == 0) {
-   #       flog.error('Job returned a WARNING. Reason:\n%s\n', results_safe$warnings)
-   #       job_success <- TRUE
-   #    }
-   #    job_output <- results_safe
-   # }
    
    flog.debug('Continuing foreach loop...')
    
@@ -453,21 +427,6 @@ flog.debug('Cluster destroyed.')
 
 IFTTT_notify(value1 = 'End batch.')
 write_log('---')
-
-# write_log(sprintf("Failed jobs: %d/%d", sum(length(job_results$failed)), n_jobs))
-# if (is.null(job_results$failed)){ 
-#    write_log('  [none]')
-# } else {
-#    write_log(paste('-', basename(job_results$failed)))
-# }
-# 
-# write_log(sprintf("Succeeded jobs: %d/%d", sum(length(job_results$succeeded)), n_jobs))
-# if (is.null(job_results$succeeded)) {
-#    write_log('  [none]')
-# } else {
-#    write_log(paste('-', basename(job_results$succeeded)))
-# }
-
 
 # tbl_results <- list_results %>% map_dfr(as_tibble)
 tbl_results <- list_results %>% 
