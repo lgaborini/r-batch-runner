@@ -11,6 +11,8 @@
 rm(list = ls())
 
 library(here)
+library(yaml)
+library(futile.logger)
 
 # Path to batch-runner directory
 path_batch_directory <- here('.')
@@ -20,7 +22,6 @@ path_batch_directory <- here('.')
 # Load global options for the batch script
 #
 
-library(yaml)
 
 batch_opts <- yaml::read_yaml(file.path(path_batch_directory, 'batch-opts.yaml'))
 
@@ -36,31 +37,49 @@ stopifnot(dir.exists(path_output))
 
 # Job loader and preloader path
 path_job_loader <- file.path(path_batch_directory, batch_opts$paths$path_job_loader)
+# path_job_loader <- file.path(path_batch_directory, 'job-scripts', 'job_loader.R')
 
 
 
 # Logfile configuration ---------------------------------------------------
 
-library(futile.logger)
+layout.worker <- function(level, msg, ...){
+   the.time <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+   if (length(list(...)) > 0) {
+      parsed <- lapply(list(...), function(x) ifelse(is.null(x), 
+                                                     "NULL", x))
+      msg <- do.call(sprintf, c(msg, parsed))
+   }
+   sprintf("%s [%s][PID %d] %s\n", names(level), the.time, Sys.getpid(), msg)
+}
 
-logfile <- file.path(path_output, batch_opts$logging$filename)
+# Set logfile paths
+logfile <- normalizePath(file.path(path_output, batch_opts$logging$filename), mustWork = FALSE, winslash = '/')
+logfile_last <- file.path(path_output, batch_opts$logging$filename_last)
+logfile_jobs_success <- file.path(path_output, batch_opts$logging$filename_succeed)
+logfile_jobs_fail <- file.path(path_output, batch_opts$logging$filename_fail)
 
-# flog.appender(appender.file(logfile), name = 'ROOT')
-flog.appender(appender.tee(logfile), name = 'ROOT')
-# flog.appender(appender.console(), name = 'ROOT')
+# Rotate last logfile to batch_output
+if (file.exists(logfile)){
+   invisible(file.copy(from = logfile, to = logfile_last, overwrite = TRUE, copy.date = TRUE))
+}
 
-# flog.threshold(DEBUG, name = 'ROOT')
-flog.threshold(INFO, name = 'ROOT')
+# flog.appender_fun <- appender.console
+flog.appender_fun <- appender.tee
+# flog.appender_fun <- appender.file
+flog.appender(flog.appender_fun(logfile), name = 'ROOT')
+
+# flog_thr_level <- INFO
+flog_thr_level <- DEBUG
+flog.threshold(flog_thr_level, name = 'ROOT')
+
+flog.layout(layout.worker)
 
 
 # A function which writes to log
 write_log <- flog.info
 
-# Create empty logfiles
-logfile_last <- file.path(path_output, batch_opts$logging$filename_last)
-logfile_jobs_success <- file.path(path_output, batch_opts$logging$filename_succeed)
-logfile_jobs_fail <- file.path(path_output, batch_opts$logging$filename_fail)
-
+# Empty logfiles
 unlink(logfile)
 unlink(logfile_jobs_success)
 unlink(logfile_jobs_fail)
@@ -76,9 +95,48 @@ source(file.path(path_batch_directory, 'batch-utilities/IFTTT.R'), local = TRUE)
 # Will contain jobfiles with success/fail results
 job_results <- list(failed = NULL, succeeded = NULL)
 
+
+
 # Job definition
 # This is run using local paths!
+flog.info('Reading job loader/preloader definitions.')
 source(path_job_loader, chdir = TRUE, local = TRUE)
+
+# # sample job which explores conditions
+# job_loader <- function(log_writer) {
+#    log_writer('job_loader: trying computation')
+#    x <- sample.int(9, 1)
+#    log_writer('job_loader: got %d', x)
+#    is_clean_success <- TRUE
+#    
+#    if (x %% 2 == 0) {
+#       is_clean_success <- FALSE
+#       stop('job_loader: fail, got even number!')
+#    }
+#    if (x %% 3 == 0) {
+#       is_clean_success <- FALSE
+#       warning('job_loader: warning, got multiple of 3!')
+#    }
+#    if (x == 7) {
+#       is_clean_success <- FALSE
+#       warning('job_loader: obtained 7, throwing warning 1/2')
+#       warning('job_loader: obtained 7, throwing warning 2/2')
+#    }
+#    if (x == 9) {
+#       is_clean_success <- FALSE
+#       warning('job_loader: obtained 9, throwing warning')
+#       stop('job_loader: obtained 9, ERROR.')
+#    }
+#    if (x == 1) {
+#       is_clean_success <- FALSE
+#       warning('job_loader: obtained 1, throwing warning 1/2')
+#       stop('job_loader: obtained 1, ERROR')
+#       warning('job_loader: obtained 1, throwing warning 2/2')
+#    }
+#    log_writer('job_loader: reached end of function, %s', ifelse(is_clean_success, 'successfully', 'with warnings'))
+#    return(x)
+# }
+
 
 if (!exists('job_preloader') || !is.function(job_preloader)) {
    stop('Job preloader not defined.')
@@ -88,8 +146,7 @@ if (!exists('job_loader') || !is.function(job_loader)) {
    stop('Job loader not defined.')
 }
 
-# Wrap the job loader
-job_loader_safe <- purrr::safely(job_loader, quiet = FALSE)
+flog.info('Job defined.')
 
 # Batch job definition -------------------------------------------------------------------
 
@@ -115,11 +172,12 @@ if (identical(jobs_in_queue, list(job_file_start))) {
    flog.warn('No jobs found: only processing template job!')
 }
 
-
+flog.info('Found %d jobs.', n_jobs)
 
 # Job preloading
 # e.g. to load data, set seed, etc.
 #
+flog.info('Running job preloader.')
 job_preloader(log_writer = write_log, path_output = path_output)
 
 
@@ -149,162 +207,207 @@ job_preloader(log_writer = write_log, path_output = path_output)
 # 
 # stop('Exit')
 
+# Setup parallel processing -----------------------------------------------
 
-while (length(jobs_in_queue) > 0) {
+flog.debug('Running sequentially, without parallel backend.')
+
+list_results <- list()
+
+for (i_job in seq_along(jobs_in_queue)) {
+   
+   # This loop always returns a list, to be processed at the end:
+   # list(job_file, job_success, job_status, job_result)
+   #
+   # - job_file: name of YAML file
+   # - job_success: boolean, if TRUE save to disk if job_status != 'warn'
+   # - job_status: 'skip', 'error', 'warn'
+   # - job_result: the return value of job_loader
+   # - job_conditions: list of conditions thrown while running job_loader
+   
+   iteration_output <- list(
+      job_file = NULL,
+      job_success = TRUE,
+      job_status = 'success',
+      job_conditions = list()
+   )
    
    # Process the job queue ---------------------------------------------------------
    
    flog.info('Processing a new job.')
    
    # Pop the first job in queue
-   job_file <- jobs_in_queue[[1]]
-   jobs_in_queue <- jobs_in_queue[-1]
-   i_job <- i_job + 1
-   
+   job_file <- jobs_in_queue[[i_job]]
+   iteration_output$job_file <- job_file
    
    # Load the YAML configuration
-   job_parameters <- yaml.load_file(job_file)
-
-   
-   # Queue the next job, if present
-   if (!is.null(job_parameters$job$next.job)) {
-      if (job_parameters$job$next.job == job_file) {
-         flog.fatal('Job loop detected!')
-         stop('Job loop detected!')
-      }
-      jobs_in_queue <- c(jobs_in_queue, job_parameters$job$next.job)
-   }
+   job_parameters <- yaml::yaml.load_file(job_file)
    
    flog.info("[Job %d of %d - %.0f%%] Running job file '%s'.", i_job, n_jobs, i_job/n_jobs * 100, job_file)
-
+   
    # Setup job output container, if job has output
-
+   
    job_file_basename <- tools::file_path_sans_ext(basename(job_file))
-   file_output <- normalizePath(file.path(path_output, paste0(job_file_basename, '.RData')), mustWork = FALSE)
+   file_output <- normalizePath(file.path(path_output, paste0(job_file_basename, '.RData')), mustWork = FALSE, winslash = '/')
    
    if (file.exists(file_output)) {
       flog.info('Job already exists.')
       if (batch_opts$job_results$overwrite) {
-            flog.info('Overwriting!')
-         } else {
-            flog.info('Skipping.')
-            next
-         }
+         flog.info('Overwriting!')
+      } else {
+         
+         flog.info('Skipping.')
+         
+         iteration_output$job_success <- TRUE
+         iteration_output$job_status <- 'skip'
+         iteration_output$job_conditions <- list()
+         list_results <- append(list_results, list(iteration_output))
+         next
+      }
    }
    
    # Job run -------------------------------------------------------------------
-
-   job_success <- TRUE
    
-   # Time and run
-   time_start <- proc.time()['elapsed']
-   time_start_global <- Sys.time()
+   job_status_detail <- NULL     # detail for last condition thrown
    
    # Call the job loader
-   job_output <- withCallingHandlers(
-      
-      {
-         
-         results_safe <- job_loader_safe(
-            job_parameters = job_parameters,
-            log_writer = write_log,
-            path_output = path_output
-         )
-         
-         # Re-throw error but re-catch it later
-         if (!is.null(results_safe$error)) {
-            signalCondition(results_safe$error)
-         }
-         
-         # Return the wrapped output
-         if (batch_opts$job_results$save_failures) {
-            results_safe
-         } else {
-            # NULL if error
-            results_safe$result
-         }
+   
+   results_safe <- withCallingHandlers(
+      withRestarts({
+            job_loader(
+               job_parameters = job_parameters,
+               log_writer = write_log,
+               path_output = path_output
+            )
+         },
+         muffleWarning = function(){},
+         muffleStop = function(){}
+      ),
+      message = function(m){
+         flog.debug('Job returned a message. Reason:\n%s\n', m)
+         browser()
+         iteration_output$job_conditions <<- append(iteration_output$job_conditions, list(m))
+         invokeRestart("muffleWarning")
       },
-      
-      warning = function(w) {
+      warning = function(w){
          flog.warn('Job returned a WARNING. Reason:\n%s\n', w)
+         iteration_output$job_success <<- iteration_output$job_success && TRUE
+         iteration_output$job_status <<- 'warn'
+         iteration_output$job_conditions <<- append(iteration_output$job_conditions, list(w))
+         job_status_detail <<- w
+         invokeRestart("muffleWarning")
       },
-      
-      error = function(e) {
+      error = function(e){
          flog.error('Job failed. Reason:\n%s\n', e)
+         iteration_output$job_success <<- FALSE
+         iteration_output$job_status <<- 'error'
+         iteration_output$job_conditions <<- append(iteration_output$job_conditions, list(e))
+         job_status_detail <<- e
+         invokeRestart("muffleStop")
          
-         job_success <<- FALSE
-      },
-      
-      finally = {
-         
-         # Job timing 
-         time_end_global <- Sys.time()
-         time_total_sec <- as.numeric(difftime(time_end_global, time_start_global, units = 'secs'))
-         flog.info(sprintf("Job file '%s' finished. Total time: %.2f seconds.", job_file, time_total_sec))
-         
-         # Notify IFTTT for longer jobs
-         if (time_total_sec >= batch_opts$notify$min_time) {
-            IFTTT_notify(value1 = sprintf('End job "%s".', job_name), value2 = job_file)
-         }
-         flog.info('---')
       }
    )
+   flog.info(sprintf("[Job %d of %d - %.0f%%] Job file '%s' finished.", i_job, n_jobs, i_job/n_jobs * 100, job_file))
+   flog.info(sprintf("[Job %d of %d - %.0f%%] Post processing results.", i_job, n_jobs, i_job/n_jobs * 100))
+   flog.info('---')
    
-   if (job_success == TRUE) {
-      flog.debug('Job "%s" succeeded.', job_file)
-      
-      # Append to succeeded jobs
-      job_results$succeeded <- c(job_results$succeeded, job_file)
-      write(job_file, file = logfile_jobs_success, append = TRUE)
-      
-      # Do something with job_output: save
-      if (!is.null(job_output)) {
-         flog.debug('Have job output!')
-         flog.debug(str(job_output))
-         
-         flog.info('Saving output in file "%s', file_output, '"')
-         save(job_output, file = file_output)
-      }
-
+   flog.debug('Returned: ')
+   flog.debug(str_str(results_safe, max.level = 0))
+   flog.debug('Detail of last condition: %s', job_status_detail)
+   flog.debug('All conditions: ', str_str(iteration_output$job_conditions))
+   flog.debug('Foreach return value:')
+   flog.debug(str_str(iteration_output))
+   
+   flog.debug('Continuing foreach loop...')
+   
+   # Imitate purrr::safely and  purrr::quietly
+   #
+   # save list "job_output" structure in RData:
+   # - result: NULL if error, else return value of job_loader
+   # - error: NULL if no error, else condition
+   # - warning: NULL if no warning, else condition
+   # - job_conditions: all conditions thrown while running, including messages
+   # - status: 'success', 'warn', 'error', 'skip'
+   
+   job_output <- list(
+      result = NULL,
+      error = NULL,
+      warning = NULL,
+      job_conditions = iteration_output$job_conditions,
+      status = iteration_output$job_status
+   )
+   
+   if (iteration_output$job_success == TRUE) {
+      job_output['result'] <- list(results_safe)
+      job_output['error'] <- list(NULL)
    } else {
-      # Append to failed jobs
-      job_results$failed <- c(job_results$failed, job_file)
-      write(job_file, file = logfile_jobs_fail, append = TRUE)
+      job_output['result'] <- list(NULL)
+      job_output['error'] <- list(results_safe)
    }
    
+   if (iteration_output$job_success == TRUE) {
+      flog.debug('Job "%s" succeeded.', job_file)
+      
+      # Do something with job_output: save
+      if (!is.null(job_output$result)) {
+         flog.debug('Have job output!')
+         flog.debug(str_str(job_output, max.level = 0))
+         
+         flog.info('Saving output in file "%s"', file_output)
+         save(job_output, file = file_output)
+      }
+      
+   } else {
+      if (iteration_output$job_success != 'skip') {
+         flog.debug('Job "%s" failed.', job_file)
+      }
+   }
+   list_results <- append(list_results, list(iteration_output))
 }  # end job queue
-
-
 
 write_log('---')
 write_log("Batch finished.")
+
 IFTTT_notify(value1 = 'End batch.')
 write_log('---')
 
-write_log(sprintf("Failed jobs: %d/%d", sum(length(job_results$failed)), n_jobs))
-if (is.null(job_results$failed)){ 
-   write_log('  [none]')
-} else {
-   write_log(paste('-', basename(job_results$failed)))
-}
+# tbl_results <- list_results %>% map_dfr(as_tibble)
+tbl_results <- list_results %>% 
+   map(enframe) %>% 
+   map_dfr(spread, 'name', 'value') %>% 
+   mutate_at(vars(job_file, job_status, job_success), unlist)
 
-write_log(sprintf("Succeeded jobs: %d/%d", sum(length(job_results$succeeded)), n_jobs))
-if (is.null(job_results$succeeded)) {
-   write_log('  [none]')
-} else {
-   write_log(paste('-', basename(job_results$succeeded)))
-}
+write_log('Succeeded jobs: ')
+tbl_results %>% 
+   filter(job_status %in% c('success', 'warn')) %>% 
+   glue::glue_data('- {basename(job_file)} ({job_status})') %>% 
+   stringr::str_flatten('\n') %>% 
+   write_log()
 
-# Save logfile to batch_output
-invisible(file.copy(from = logfile, to = logfile_last, overwrite = TRUE, copy.date = TRUE))
+write_log('FAILED jobs: ')
+tbl_results %>% 
+   filter(job_status == 'error') %>% 
+   glue::glue_data('- {basename(job_file)}') %>% 
+   stringr::str_flatten('\n') %>% 
+   write_log()
 
+write_log('Skipped jobs: ')
+tbl_results %>% 
+   filter(job_status == 'skip') %>% 
+   glue::glue_data('- {basename(job_file)}') %>% 
+   stringr::str_flatten('\n') %>% 
+   write_log()
 
-
-# Run the optional termination command
-if (exists('job_parameters') && !is.null(job_parameters$job$run.on.terminate)) {
-   write_log('Running termination commands...')
-   system(job_parameters$job$run.on.terminate)   
-}
-
+# Append to failed jobs 
+tbl_results %>% 
+   filter(job_status == 'error') %>% 
+   glue::glue_data('{basename(job_file)} ({job_status})') %>% 
+   write(file = logfile_jobs_fail, append = TRUE)
+   
+# Append to succeeded jobs 
+tbl_results %>% 
+   filter(job_status %in% c('success', 'warn')) %>% 
+   glue::glue_data('{basename(job_file)} ({job_status})') %>% 
+   write(file = logfile_jobs_success, append = TRUE)
+   
 write_log('---')
 write_log('Batch finished.')
