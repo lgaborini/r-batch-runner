@@ -334,18 +334,21 @@ list_results <- foreach(i_job = seq_along(jobs_in_queue),
                path_output = path_output
             )
          },
-         muffleWarning = function(w){},
-         muffleStop = function(e){}
+         muffleWarning = function(){},
+         muffleStop = function(){}
       ),
+      message = function(m){
+         flog.debug('Job returned a message. Reason:\n%s\n', m)
+         foreach_output$job_conditions <<- append(foreach_output$job_conditions, list(m))
+         invokeRestart("muffleWarning")
+      },
       warning = function(w){
          flog.warn('Job returned a WARNING. Reason:\n%s\n', w)
          foreach_output$job_success <<- foreach_output$job_success && TRUE
          foreach_output$job_status <<- 'warn'
          foreach_output$job_conditions <<- append(foreach_output$job_conditions, list(w))
          job_status_detail <<- w
-
          invokeRestart("muffleWarning")
-
       },
       error = function(e){
          flog.error('Job failed. Reason:\n%s\n', e)
@@ -357,14 +360,12 @@ list_results <- foreach(i_job = seq_along(jobs_in_queue),
          
       }
    )
-   job_status_detail['job_result'] <- results_safe
-   
    flog.info(sprintf("[Job %d of %d - %.0f%%] Job file '%s' finished.", i_job, n_jobs, i_job/n_jobs * 100, job_file))
    flog.info(sprintf("[Job %d of %d - %.0f%%] Post processing results.", i_job, n_jobs, i_job/n_jobs * 100))
    flog.info('---')
    
    flog.debug('Returned: ')
-   flog.debug(str_str(results_safe))
+   flog.debug(str_str(results_safe, max.level = 0))
    flog.debug('Detail of last condition: %s', job_status_detail)
    flog.debug('All conditions: ', str_str(foreach_output$job_conditions))
    flog.debug('Foreach return value:')
@@ -372,13 +373,13 @@ list_results <- foreach(i_job = seq_along(jobs_in_queue),
    
    flog.debug('Continuing foreach loop...')
    
-   # Imitate purrr::safely
+   # Imitate purrr::safely and  purrr::quietly
    #
    # save list "job_output" structure in RData:
    # - result: NULL if error, else return value of job_loader
    # - error: NULL if no error, else condition
    # - warning: NULL if no warning, else condition
-   # - job_conditions: all conditions thrown while running
+   # - job_conditions: all conditions thrown while running, including messages
    # - status: 'success', 'warn', 'error', 'skip'
    
    job_output <- list(
@@ -390,11 +391,11 @@ list_results <- foreach(i_job = seq_along(jobs_in_queue),
    )
    
    if (foreach_output$job_success == TRUE) {
-      job_output['result'] <- results_safe
+      job_output['result'] <- list(results_safe)
       job_output['error'] <- list(NULL)
    } else {
       job_output['result'] <- list(NULL)
-      job_output['error'] <- results_safe
+      job_output['error'] <- list(results_safe)
    }
    
    if (foreach_output$job_success == TRUE) {
@@ -403,7 +404,7 @@ list_results <- foreach(i_job = seq_along(jobs_in_queue),
       # Do something with job_output: save
       if (!is.null(job_output$result)) {
          flog.debug('Have job output!')
-         # flog.debug(str_str(job_output, nchar.max = 100, max.level = 2))
+         flog.debug(str_str(job_output, max.level = 0))
          
          flog.info('Saving output in file "%s"', file_output)
          save(job_output, file = file_output)
