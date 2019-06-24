@@ -15,8 +15,9 @@ This directory contains a framework to run parametrized scripts in batch mode.
 - output is stored in `batch-out/`
 - log is stored in `batch-out/workers.log`
 - all these options are configurable: `batch-opts.yaml`
+- embarassingly parallel execution is supported through `foreach` and `doParallel`
 
-Jobs are launched with script `script_job_launcher.R`.
+Jobs are launched with script `script_job_launcher_parallel.R`.
 
 ## Example
 
@@ -73,17 +74,24 @@ The job loader is a function which accepts these arguments:
 
 It is responsible for calling the job scripts in the `job-scripts/` directory.
 
-The job loader is wrapped into a `purrr::safely` wrapper.
-It always returns a list with two components, `error` and `result`. One is always `NULL`.
+The job loader is wrapped into a wrapper similar to `purrr::safely`.
+Like `safely`, it always returns a list with two components, `error` and `result`. One is always `NULL`.
+Moreover, it also has the following components:
+- `warning`: like `purrr::quietly`, captures warning messages
+- `job_conditions`: captures all conditions thrown while execution, warnings and messages
+- `status`: a character string, `success` / `skip` / `error` / `warn`
 
 Errors are signaled and saved in component `error`, return values from the job loader are stored into component `result`.
 
-The return value is always saved to disk in the output directory, in a `.RData` file with the same name as the job.
+The return value, if present, is always saved to disk in the output directory, in a `.RData` file with the same name as the job.
 
 ### Logging
 
 Logging is provided by package `futile.logger`.   
 The default logger is passed to the job loader, which is itself responsible of logging job output.
+
+> Parallel:    
+> logs are split across workers, named by their PIDs.
 
 ### Notifications
 
@@ -96,5 +104,6 @@ Notifications can be disabled in the `batch-opts.yaml` file.
 
 ## TODO
 
+- [x] Parallel execution
 - [ ] Separate YAML configuration from manual script editing
 - [ ] Define job sweep in YAML file
